@@ -1,0 +1,5 @@
+export { RegisterContainer } from './RegisterContainer'
+export { RegisterFields } from './RegisterFields'
+export { RegisterTerms } from './RegisterTerms'
+export { RegisterButton } from './RegisterButton'
+export { RegisterFooter } from './RegisterFooter' 
