@@ -1,0 +1,485 @@
+= API Hooks - Documentação Técnica Completa
+:toc: left
+:icons: font
+:source-highlighter: highlightjs
+:numbered:
+
+== 🎯 Visão Geral
+
+Sistema de hooks unificado para comunicação com APIs, construído sobre TanStack Query v5 com funcionalidades avançadas de cache, retry e otimização automática.
+
+=== 🚀 Principais Funcionalidades
+
+* **Cache Inteligente** - Invalidação automática e otimizada
+* **Retry Policy** - Backoff exponencial configurável
+* **Loading States** - Estados padronizados para toda aplicação
+* **Error Handling** - Tratamento centralizado de erros
+* **Toast Integration** - Sistema de notificações desacoplado
+* **TypeScript First** - Type safety completa
+
+== 🔍 Data Fetching
+
+=== useApiQuery
+
+Hook principal para buscar dados com cache automático e retry inteligente.
+
+[source,typescript]
+----
+interface UseApiQueryOptions<TData> {
+  endpoint: string
+  queryKey: QueryKey
+  enabled?: boolean
+  staleTime?: number
+  retry?: number | ((failureCount: number, error: unknown) => boolean)
+  retryDelay?: number | ((attemptIndex: number) => number)
+}
+
+// Exemplo básico - buscar perfil do usuário
+const { data: profile, isLoading, error } = useApiQuery({
+  endpoint: '/auth/me',
+  queryKey: ['profile']
+})
+
+// Exemplo avançado com retry customizado
+const { data } = useApiQuery({
+  endpoint: '/auth/preferences',
+  queryKey: ['preferences'],
+  retry: (failureCount, error) => {
+    // Não retry em erros 4xx
+    if (error.response?.status >= 400 && error.response?.status < 500) {
+      return false
+    }
+    return failureCount < 3
+  },
+  retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000)
+})
+----
+
+=== usePaginatedQuery
+
+Hook especializado para dados paginados com carregamento infinito.
+
+[source,typescript]
+----
+const {
+  data,           // { pages: Array<PaginatedResponse<T>>, pageParams: string[] }
+  hasNextPage,    // boolean
+  fetchNextPage,  // () => Promise<void>
+  isFetchingNextPage // boolean
+} = usePaginatedQuery({
+  endpoint: '/auth/activity-log',
+  queryKey: ['activity-log', filters],
+  filters: { type: 'login' },
+  pageSize: 20
+})
+----
+
+== ✏️ Mutations - Operações de Auth
+
+=== useApiCreate
+
+Hook especializado para criação de recursos:
+
+[source,typescript]
+----
+interface CreateOptions<TData, TVariables> {
+  endpoint: string
+  invalidateQueries?: QueryKey[]
+  onSuccess?: (data: TData, variables: TVariables) => void
+  onError?: (error: ApiError, variables: TVariables) => void
+  successMessage?: string
+}
+
+const changePassword = useApiCreate<void, ChangePasswordData>({
+  endpoint: '/auth/change-password',
+  successMessage: 'Senha alterada com sucesso!',
+  onSuccess: () => {
+    // Opcional: logout forçado após mudança de senha
+    navigate('/login')
+  }
+})
+
+// Uso
+changePassword.mutate({ currentPassword: 'old', newPassword: 'new' })
+// ou com async/await
+await changePassword.mutateAsync(passwordData)
+----
+
+=== useApiUpdate
+
+Hook para atualização de recursos existentes:
+
+[source,typescript]
+----
+const updateProfile = useApiUpdate<User, UpdateProfileData>({
+  endpoint: '/auth/profile',
+  invalidateQueries: [['profile']],
+  successMessage: 'Perfil atualizado!',
+  onSuccess: (updatedUser) => {
+    // Atualizar cache específico
+    queryClient.setQueryData(['profile'], updatedUser)
+  }
+})
+----
+
+=== useApiDelete
+
+Hook para remoção de recursos:
+
+[source,typescript]
+----
+const deleteAccount = useApiDelete({
+  endpoint: '/auth/account',
+  successMessage: 'Conta removida!',
+  onSuccess: () => {
+    // Limpar cache e redirecionar
+    queryClient.clear()
+    navigate('/register')
+  }
+})
+----
+
+=== Estados das Mutations
+
+Todos os hooks de mutation retornam estados consistentes:
+
+[source,typescript]
+----
+const mutation = useApiCreate(...)
+
+// Estados disponíveis
+mutation.isPending    // boolean - operação em andamento
+mutation.isSuccess    // boolean - sucesso
+mutation.isError      // boolean - erro
+mutation.error        // ApiError | null
+mutation.data         // TData | undefined
+mutation.reset()      // () => void - limpar estado
+----
+
+== 🏭 Factory Pattern - Mutations Reutilizáveis
+
+=== createApiMutation
+
+Factory para criar mutations padronizadas:
+
+[source,typescript]
+----
+const createAuthMutation = <TData, TVariables>(
+  method: 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+  endpoint: string,
+  options: MutationOptions<TData, TVariables> = {}
+): UseMutationResult<TData, ApiError, TVariables> => {
+  return createApiMutation(method, endpoint, {
+    successMessage: 'Operação realizada com sucesso!',
+    ...options
+  })
+}
+----
+
+=== Exemplos Práticos
+
+==== Factory para Auth
+
+[source,typescript]
+----
+// 🏭 Definir factory de mutations para auth
+const AuthMutations = {
+  updateProfile: createApiMutation<User, UpdateProfileData>('PATCH', '/auth/profile', {
+    successMessage: 'Perfil atualizado!',
+    invalidateQueries: [['profile']]
+  }),
+  
+  changePassword: createApiMutation<void, ChangePasswordData>('POST', '/auth/change-password', {
+    successMessage: 'Senha alterada com sucesso!'
+  }),
+  
+  resetPassword: createApiMutation<void, { email: string }>('POST', '/auth/reset-password', {
+    successMessage: 'Email de recuperação enviado!'
+  }),
+  
+  deleteAccount: createApiMutation<void, void>('DELETE', '/auth/account', {
+    successMessage: 'Conta removida!',
+    onSuccess: () => {
+      queryClient.clear()
+    }
+  })
+}
+
+// 📝 Uso nos componentes
+const ProfileSettings = () => {
+  const updateProfile = AuthMutations.updateProfile
+  const changePassword = AuthMutations.changePassword
+  
+  return (
+    <div>
+      <button onClick={() => updateProfile.mutate(profileData)}>
+        Atualizar Perfil
+      </button>
+      <button onClick={() => changePassword.mutate(passwordData)}>
+        Alterar Senha
+      </button>
+    </div>
+  )
+}
+----
+
+== 🔄 Prefetching e Cache Avançado
+
+=== Prefetch Strategy
+
+[source,typescript]
+----
+const useProfilePrefetch = () => {
+  const queryClient = useQueryClient()
+  
+  const prefetchProfile = useCallback(() => {
+    queryClient.prefetchQuery({
+      queryKey: ['profile'],
+      queryFn: () => apiClient.get('/auth/me'),
+      staleTime: 5 * 60 * 1000, // 5 minutos
+    })
+  }, [queryClient])
+
+  return { prefetchProfile }
+}
+
+function AuthButton() {
+  const { prefetchProfile } = useProfilePrefetch()
+  
+  return (
+    <button 
+      onMouseEnter={prefetchProfile} // Prefetch on hover
+      onClick={() => navigate('/profile')}
+    >
+      Meu Perfil
+    </button>
+  )
+}
+----
+
+== 🎨 Sistema de Toast Injetável
+
+Sistema de notificações desacoplado e testável.
+
+=== Configuração Básica
+
+[source,typescript]
+----
+// 1. Configure o provider no root
+function App() {
+  return (
+    <ToastProvider>
+      <YourApp />
+    </ToastProvider>
+  )
+}
+
+// 2. Use em qualquer componente
+function AuthForm() {
+  const toast = useToastService()
+  
+  const handleError = () => {
+    toast.error('Credenciais inválidas!', {
+      action: {
+        label: 'Tentar novamente',
+        onClick: () => retryLogin()
+      }
+    })
+  }
+}
+----
+
+=== Para Testes
+
+[source,typescript]
+----
+import { render } from '@testing-library/react'
+import { createMockToastService } from '@/hooks/api/testing'
+
+test('exibe toast de sucesso no login', () => {
+  const mockToast = createMockToastService()
+  
+  render(
+    <ToastProvider value={mockToast}>
+      <LoginForm />
+    </ToastProvider>
+  )
+  
+  // Simular login
+  fireEvent.click(screen.getByText('Entrar'))
+  
+  // Verificar toast
+  expect(mockToast.success).toHaveBeenCalledWith('Login realizado!')
+})
+----
+
+== 🔧 Configuração e Setup
+
+=== Provider Setup
+
+[source,typescript]
+----
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ApiProvider, ToastProvider } from '@/hooks/api'
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutos
+      retry: (failureCount, error) => {
+        if (error.response?.status >= 400 && error.response?.status < 500) {
+          return false
+        }
+        return failureCount < 3
+      }
+    }
+  }
+})
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ToastProvider>
+        <ApiProvider baseURL="https://api.exemplo.com">
+          <YourApp />
+        </ApiProvider>
+      </ToastProvider>
+    </QueryClientProvider>
+  )
+}
+----
+
+=== Configuração de Teste
+
+[source,typescript]
+----
+import { setupServer } from 'msw/node'
+import { http, HttpResponse } from 'msw'
+
+export const server = setupServer(
+  http.get('/auth/me', () => {
+    return HttpResponse.json({
+      id: '1',
+      name: 'João Silva',
+      email: 'joao@exemplo.com'
+    })
+  }),
+  
+  http.post('/auth/change-password', () => {
+    return HttpResponse.json(null, { status: 204 })
+  })
+)
+----
+
+== 📊 Performance e Otimizações
+
+=== Estratégias de Cache
+
+[source,typescript]
+----
+// Cache persistente para dados estáticos
+const { data } = useApiQuery({
+  endpoint: '/auth/permissions',
+  queryKey: ['permissions'],
+  staleTime: Infinity, // Nunca expira
+  cacheTime: 24 * 60 * 60 * 1000 // 24 horas
+})
+
+// Cache curto para dados dinâmicos
+const { data } = useApiQuery({
+  endpoint: '/auth/notifications',
+  queryKey: ['notifications'],
+  staleTime: 30 * 1000, // 30 segundos
+  refetchInterval: 60 * 1000 // Refetch a cada minuto
+})
+----
+
+=== Otimistic Updates
+
+[source,typescript]
+----
+const updateProfile = useApiUpdate({
+  endpoint: '/auth/profile',
+  onMutate: async (newData) => {
+    // Cancelar queries em andamento
+    await queryClient.cancelQueries({ queryKey: ['profile'] })
+    
+    // Snapshot do valor anterior
+    const previousProfile = queryClient.getQueryData(['profile'])
+    
+    // Aplicar update otimista
+    queryClient.setQueryData(['profile'], (old) => ({
+      ...old,
+      ...newData
+    }))
+    
+    return { previousProfile }
+  },
+  onError: (err, newData, context) => {
+    // Reverter em caso de erro
+    queryClient.setQueryData(['profile'], context.previousProfile)
+  },
+  onSettled: () => {
+    // Sempre refetch ao final
+    queryClient.invalidateQueries({ queryKey: ['profile'] })
+  }
+})
+----
+
+== 🛡️ Error Handling
+
+=== Tratamento Global de Erros
+
+[source,typescript]
+----
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      onError: (error: ApiError) => {
+        if (error.status === 401) {
+          // Redirecionar para login
+          authStore.getState().logout()
+          navigate('/login')
+        } else if (error.status >= 500) {
+          // Erro do servidor
+          toast.error('Erro interno do servidor. Tente novamente.')
+        }
+      }
+    },
+    mutations: {
+      onError: (error: ApiError) => {
+        // Log automático de erros de mutation
+        console.error('Mutation Error:', error)
+        
+        if (!error.message?.includes('toast já exibido')) {
+          toast.error(error.message || 'Erro inesperado')
+        }
+      }
+    }
+  }
+})
+----
+
+== 📈 Métricas e Monitoramento
+
+=== DevTools Integration
+
+[source,typescript]
+----
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+
+function App() {
+  return (
+    <>
+      <YourApp />
+      {process.env.NODE_ENV === 'development' && (
+        <ReactQueryDevtools initialIsOpen={false} />
+      )}
+    </>
+  )
+}
+----
+
+---
+
+**🔧 Esta documentação cobre o sistema de hooks focado em autenticação e gerenciamento de perfil.** 

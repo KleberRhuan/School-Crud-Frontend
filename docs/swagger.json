@@ -1,0 +1,508 @@
+{
+  "openapi" : "3.1.0",
+  "info" : {
+    "title" : "School API",
+    "contact" : {
+      "name" : "kleber Rhuan",
+      "url" : "https://kleber.rhuan.cloud",
+      "email" : "kleber_rhuan@hotmail.com,"
+    },
+    "license" : {
+      "name" : "LicenÃ§a Privada",
+      "url" : "https://kleber.rhuan.cloud/license"
+    },
+    "version" : "v1"
+  },
+  "servers" : [ {
+    "url" : "http://localhost:8080",
+    "description" : "Generated server url"
+  } ],
+  "security" : [ {
+    "BearerAuth" : [ ]
+  } ],
+  "tags" : [ {
+    "name" : "RedefiniÃ§Ã£o de Senha",
+    "description" : "Endpoints para redefiniÃ§Ã£o de senha via e-mail"
+  }, {
+    "name" : "AutenticaÃ§Ã£o",
+    "description" : "Endpoints para autenticaÃ§Ã£o e gerenciamento de usuÃ¡rios"
+  } ],
+  "paths" : {
+    "/api/v1/auth/register" : {
+      "post" : {
+        "tags" : [ "AutenticaÃ§Ã£o" ],
+        "summary" : "Registrar novo usuÃ¡rio",
+        "description" : "Cria uma nova conta de usuÃ¡rio e dispara um e-mail de verificaÃ§Ã£o para o endereÃ§o informado.\n\n          O link enviado contÃ©m um token UUID que deve ser utilizado no endpoint /verify para ativaÃ§Ã£o da conta.\n",
+        "operationId" : "register",
+        "requestBody" : {
+          "description" : "Dados de registro do usuÃ¡rio",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RegisterRequest"
+              },
+              "examples" : {
+                "Registro Exemplo" : {
+                  "summary" : "Exemplo de payload para registro",
+                  "description" : "Registro Exemplo",
+                  "value" : {
+                    "name" : "JoÃ£o da Silva",
+                    "email" : "joao.silva@example.com",
+                    "password" : "P@ssw0rd!"
+                  }
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "UsuÃ¡rio registrado com sucesso. E-mail de verificaÃ§Ã£o enviado."
+          },
+          "default" : {
+            "$ref" : "#/components/responses/InternalServerError"
+          },
+          "409" : {
+            "description" : "E-mail jÃ¡ estÃ¡ em uso",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/refresh" : {
+      "post" : {
+        "tags" : [ "AutenticaÃ§Ã£o" ],
+        "summary" : "Renovar token de acesso",
+        "description" : "Gera um novo accessToken a partir do refreshToken armazenado no cookie httpOnly REFRESH_TOKEN.\n          Caso o refreshToken esteja expirado, o cookie Ã© limpo e Ã© retornado HTTP 401.\n",
+        "operationId" : "refresh",
+        "parameters" : [ {
+          "name" : "REFRESH_TOKEN",
+          "in" : "cookie",
+          "description" : "Refresh token armazenado em cookie httpOnly",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          },
+          "example" : "eyJhbGciOiJIUzI1NiJ9..."
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Token renovado com sucesso",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "default" : {
+            "$ref" : "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/password/reset" : {
+      "post" : {
+        "tags" : [ "RedefiniÃ§Ã£o de Senha" ],
+        "summary" : "Redefinir senha",
+        "description" : "Redefine a senha do usuÃ¡rio utilizando o token recebido por e-mail.\n\n          â€¢ O token deve ser vÃ¡lido, nÃ£o expirado e nÃ£o utilizado anteriormente.\n          â€¢ ApÃ³s o uso, o token Ã© marcado como utilizado e nÃ£o pode ser reutilizado.\n          â€¢ A nova senha deve atender aos critÃ©rios de seguranÃ§a (mÃ­nimo 8 caracteres).\n          â€¢ Rate limiting aplicado para prevenir ataques de forÃ§a bruta.\n",
+        "operationId" : "resetPassword",
+        "requestBody" : {
+          "description" : "Token e nova senha para redefiniÃ§Ã£o",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ResetPasswordRequest"
+              },
+              "examples" : {
+                "Reset Senha Exemplo" : {
+                  "summary" : "Exemplo de payload para redefinir senha",
+                  "description" : "Reset Senha Exemplo",
+                  "value" : {
+                    "token" : "abc123def456ghi789jkl012mno345pqr678stu901vwx234yz567890abcdef123",
+                    "newPassword" : "NovaSenha123!"
+                  }
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "Senha redefinida com sucesso"
+          },
+          "default" : {
+            "$ref" : "#/components/responses/InternalServerError"
+          },
+          "410" : {
+            "description" : "Token invÃ¡lido, expirado ou jÃ¡ utilizado",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "429" : {
+            "description" : "Muitas tentativas - rate limit excedido",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/password/forgot" : {
+      "post" : {
+        "tags" : [ "RedefiniÃ§Ã£o de Senha" ],
+        "summary" : "Solicitar redefiniÃ§Ã£o de senha",
+        "description" : "Envia um e-mail com link para redefinir senha para o endereÃ§o informado.\n\n          â€¢ Sempre retorna HTTP 202 (Accepted), independente do e-mail existir ou nÃ£o, para evitar enumeraÃ§Ã£o de usuÃ¡rios.\n          â€¢ Se o e-mail existir, um token de redefiniÃ§Ã£o Ã© gerado e enviado por e-mail.\n          â€¢ O token tem validade configurÃ¡vel (padrÃ£o: 15 minutos) e pode ser usado apenas uma vez.\n          â€¢ Rate limiting aplicado para prevenir abuso.\n",
+        "operationId" : "forgotPassword",
+        "requestBody" : {
+          "description" : "E-mail para envio do link de redefiniÃ§Ã£o",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ForgotPasswordRequest"
+              },
+              "examples" : {
+                "Esqueci Senha Exemplo" : {
+                  "summary" : "Exemplo de payload para solicitar redefiniÃ§Ã£o",
+                  "description" : "Esqueci Senha Exemplo",
+                  "value" : {
+                    "email" : "usuario@example.com"
+                  }
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "202" : {
+            "description" : "SolicitaÃ§Ã£o processada com sucesso (sempre retorna este cÃ³digo)"
+          },
+          "default" : {
+            "$ref" : "#/components/responses/InternalServerError"
+          },
+          "429" : {
+            "description" : "Muitas tentativas - rate limit excedido",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout" : {
+      "post" : {
+        "tags" : [ "AutenticaÃ§Ã£o" ],
+        "summary" : "Realizar logout",
+        "description" : "Invalida o accessToken atual, remove o refreshToken associado e limpa o cookie REFRESH_TOKEN.\n",
+        "operationId" : "logout",
+        "responses" : {
+          "204" : {
+            "description" : "Logout realizado com sucesso"
+          },
+          "default" : {
+            "$ref" : "#/components/responses/InternalServerError"
+          }
+        },
+        "security" : [ {
+          "BearerAuth" : [ ]
+        } ]
+      }
+    },
+    "/api/v1/auth/login" : {
+      "post" : {
+        "tags" : [ "AutenticaÃ§Ã£o" ],
+        "summary" : "Realizar login",
+        "description" : "Autentica um usuÃ¡rio utilizando e-mail e senha e emite um par de tokens JWT.\n\n          â€¢ accessToken: JWT assinado, deve ser enviado no cabeÃ§alho Authorization como Bearer Token em chamadas protegidas.\n          â€¢ refreshToken: armazenado em cookie httpOnly (REFRESH_TOKEN) e utilizado exclusivamente no endpoint de /refresh para renovar o accessToken.\n\n          O tempo de vida dos tokens varia conforme o campo rememberMe: se true, o refreshToken Ã© vÃ¡lido por 30 dias; caso contrÃ¡rio, 24 h.\n",
+        "operationId" : "login",
+        "requestBody" : {
+          "description" : "Dados de login do usuÃ¡rio",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LoginRequest"
+              },
+              "examples" : {
+                "Login Exemplo" : {
+                  "summary" : "Exemplo de payload para login",
+                  "description" : "Login Exemplo",
+                  "value" : {
+                    "email" : "john.doe@example.com",
+                    "password" : "P@ssw0rd!",
+                    "rememberMe" : false
+                  }
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Login realizado com sucesso",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "default" : {
+            "$ref" : "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/verify" : {
+      "get" : {
+        "tags" : [ "AutenticaÃ§Ã£o" ],
+        "summary" : "Verificar e-mail",
+        "description" : "Ativa a conta do usuÃ¡rio validando o token recebido por e-mail.\n          Em caso de sucesso, o usuÃ¡rio Ã© redirecionado (HTTP 302) para a pÃ¡gina de confirmaÃ§Ã£o no front-end.\n",
+        "operationId" : "verify",
+        "parameters" : [ {
+          "name" : "token",
+          "in" : "query",
+          "description" : "Token de verificaÃ§Ã£o enviado por email",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "example" : "123e4567-e89b-12d3-a456-426614174000"
+        } ],
+        "responses" : {
+          "302" : {
+            "description" : "E-mail verificado com sucesso â€“ redirecionamento para o front-end"
+          },
+          "default" : {
+            "$ref" : "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/password/reset/token" : {
+      "get" : {
+        "tags" : [ "RedefiniÃ§Ã£o de Senha" ],
+        "summary" : "Validar token de redefiniÃ§Ã£o",
+        "description" : "Verifica se um token de redefiniÃ§Ã£o de senha Ã© vÃ¡lido e ainda pode ser utilizado.\n\n          â€¢ Ãštil para validaÃ§Ã£o na interface do usuÃ¡rio antes de exibir o formulÃ¡rio de nova senha.\n          â€¢ Retorna HTTP 200 se o token for vÃ¡lido.\n          â€¢ Retorna HTTP 410 se o token for invÃ¡lido, expirado ou jÃ¡ utilizado.\n",
+        "operationId" : "validateResetToken",
+        "parameters" : [ {
+          "name" : "token",
+          "in" : "query",
+          "description" : "Token de redefiniÃ§Ã£o recebido por e-mail",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          },
+          "example" : "abc123def456ghi789jkl012mno345pqr678stu901vwx234yz567890abcdef123"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Token vÃ¡lido e pode ser utilizado"
+          },
+          "default" : {
+            "$ref" : "#/components/responses/InternalServerError"
+          },
+          "410" : {
+            "description" : "Token invÃ¡lido, expirado ou jÃ¡ utilizado",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "RegisterRequest" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "password" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "name" ]
+      },
+      "ApiErrorResponse" : {
+        "type" : "object",
+        "properties" : {
+          "status" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "type" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "detail" : {
+            "type" : "string"
+          },
+          "userMessage" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "violations" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Violation"
+            }
+          }
+        }
+      },
+      "Violation" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "message" : {
+            "type" : "string"
+          }
+        }
+      },
+      "TokenResponse" : {
+        "type" : "object",
+        "properties" : {
+          "tokenType" : {
+            "type" : "string"
+          },
+          "accessToken" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ResetPasswordRequest" : {
+        "type" : "object",
+        "properties" : {
+          "token" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "newPassword" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "newPassword", "token" ]
+      },
+      "ForgotPasswordRequest" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "email" ]
+      },
+      "LoginRequest" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string"
+          },
+          "password" : {
+            "type" : "string",
+            "maxLength" : 2147483647,
+            "minLength" : 6
+          },
+          "rememberMe" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "email", "password" ]
+      },
+      "ErrorResponse" : {
+        "$ref" : "#/components/schemas/ErrorResponse"
+      }
+    },
+    "responses" : {
+      "BadRequest" : {
+        "description" : "RequisiÃ§Ã£o invÃ¡lida",
+        "content" : {
+          "application/json" : {
+            "schema" : {
+              "$ref" : "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "Unauthorized" : {
+        "description" : "Credenciais ausentes ou invÃ¡lidas",
+        "content" : {
+          "application/json" : {
+            "schema" : {
+              "$ref" : "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "NotFound" : {
+        "description" : "Recurso nÃ£o encontrado",
+        "content" : {
+          "application/json" : {
+            "schema" : {
+              "$ref" : "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "InternalServerError" : {
+        "description" : "Erro inesperado no servidor",
+        "content" : {
+          "application/json" : {
+            "schema" : {
+              "$ref" : "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes" : {
+      "BearerAuth" : {
+        "type" : "http",
+        "scheme" : "bearer",
+        "bearerFormat" : "JWT"
+      }
+    }
+  }
+}
