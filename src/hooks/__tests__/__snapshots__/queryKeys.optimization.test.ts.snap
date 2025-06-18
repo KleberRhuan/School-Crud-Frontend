@@ -1,0 +1,53 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ETAPA 5: Otimização de createQueryKeys > Snapshot Tests > deve manter estrutura consistente das chaves 1`] = `
+[
+  "user",
+]
+`;
+
+exports[`ETAPA 5: Otimização de createQueryKeys > Snapshot Tests > deve manter estrutura consistente das chaves 2`] = `
+[
+  "user",
+  "list",
+]
+`;
+
+exports[`ETAPA 5: Otimização de createQueryKeys > Snapshot Tests > deve manter estrutura consistente das chaves 3`] = `
+[
+  "user",
+  "detail",
+]
+`;
+
+exports[`ETAPA 5: Otimização de createQueryKeys > Snapshot Tests > deve manter estrutura consistente das chaves 4`] = `
+[
+  "user",
+  "list",
+  {
+    "filters": {
+      "active": true,
+    },
+  },
+]
+`;
+
+exports[`ETAPA 5: Otimização de createQueryKeys > Snapshot Tests > deve manter estrutura consistente das chaves 5`] = `
+[
+  "user",
+  "detail",
+  1,
+]
+`;
+
+exports[`ETAPA 5: Otimização de createQueryKeys > Snapshot Tests > deve manter estrutura consistente das chaves 6`] = `
+[
+  "user",
+  "infinite",
+  {
+    "filters": {
+      "page": 1,
+    },
+  },
+]
+`;
