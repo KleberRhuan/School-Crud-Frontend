@@ -17,7 +17,9 @@ let refreshRetryCount: number = 0
 const authService = createAuthService(api);
 
 /**
- * Função de refresh com retry e controle de concorrência
+ * Função de refresh com retry e controle de concorrência.
+ * Garante que apenas uma requisição de refresh aconteça por vez,
+ * enfileirando as demais e reutilizando a mesma promise.
  */
 const performRefresh = async (): Promise<string> => {
   if (refreshPromise) {
@@ -91,13 +93,18 @@ const responseErrorInterceptor = (api: AxiosInstance) => async (error: AxiosErro
   const apiError = ApiError.fromHttpError(error)
 
   const isAuthEndpoint = originalRequest.url?.includes('/auth/')
+  // Em caso de 401 (token expirado) e não estando já em processo de retry,
+  // inicia o fluxo de refresh para obter novo token
   if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
     originalRequest._retry = true
 
+    // Se já houver um refresh em andamento, a requisição é enfileirada
+    // para ser processada assim que o novo token estiver disponível.
     if (isRefreshing) {
       return enqueueRequest(originalRequest, api)
     }
 
+    // Impede loops infinitos cancelando após exceder o número máximo de tentativas
     if (refreshRetryCount >= QUEUE_CONFIG.MAX_RETRIES) {
       const maxRetriesError : ApiError = ApiError.requestRetriesExceeded();
       clearQueue(maxRetriesError)
@@ -108,6 +115,8 @@ const responseErrorInterceptor = (api: AxiosInstance) => async (error: AxiosErro
 
     try {
       const accessToken =  await performRefresh();
+      // Após renovar o token, libera todas as requisições enfileiradas
+      // reexecutando-as com o novo accessToken
       processQueue(accessToken)
 
       if (originalRequest.headers) {
@@ -117,6 +126,8 @@ const responseErrorInterceptor = (api: AxiosInstance) => async (error: AxiosErro
       return api(originalRequest)
     } catch (refreshError) {
       const sessionError : ApiError = ApiError.sessionExpired();
+      // Em caso de falha no refresh, todas as requisições pendentes
+      // são canceladas e o usuário deve autenticar novamente
       clearQueue(sessionError)
       throw sessionError
     } finally {

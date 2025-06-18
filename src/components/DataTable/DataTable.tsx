@@ -87,7 +87,9 @@ export function DataTable<T = any>({
   const { rows } = table.getRowModel()
   const parentRef = React.useRef<HTMLDivElement>(null)
 
-  // Configuração do virtualizador
+  // Configuração do virtualizador de linhas. Ele calcula apenas
+  // os elementos visíveis no viewport, evitando renderizar todas
+  // as linhas de uma vez.
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => parentRef.current,
@@ -95,7 +97,8 @@ export function DataTable<T = any>({
     overscan: 10,
   })
 
-  // Header virtualizer para colunas
+  // Virtualização das colunas no cabeçalho. Útil para tabelas com
+  // muitas colunas, garantindo scroll horizontal performático.
   const columnVirtualizer = useVirtualizer({
     horizontal: true,
     count: table.getVisibleFlatColumns().length,
@@ -243,6 +246,7 @@ export function DataTable<T = any>({
                 borderBottom: '2px solid rgba(14, 165, 233, 0.3)',
               }}
             >
+              {/* Renderiza apenas as colunas visíveis de forma virtualizada */}
               {virtualColumns.map((virtualColumn) => {
                 const column = table.getVisibleFlatColumns()[virtualColumn.index]
                 return (
@@ -279,7 +283,7 @@ export function DataTable<T = any>({
               })}
             </Box>
 
-            {/* Virtual Rows */}
+            {/* Virtual Rows: cada item representa uma linha visível */}
             {virtualItems.map((virtualRow) => {
               const row = rows[virtualRow.index]
               return (
@@ -299,6 +303,7 @@ export function DataTable<T = any>({
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.15 }}
                 >
+                  {/* Cada coluna é renderizada na posição calculada pelo virtualizador */}
                   {virtualColumns.map((virtualColumn) => {
                     const cell = row.getVisibleCells()[virtualColumn.index]
                     return (

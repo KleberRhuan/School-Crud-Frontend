@@ -207,7 +207,9 @@ export const formatDuration = (ms: number): string => {
 }
 
 /**
- * Detecta automaticamente o tipo de dados baseado no valor
+ * Detecta automaticamente o tipo de dados baseado no valor.
+ * Essa heurística simples facilita a formatação automática de
+ * colunas desconhecidas na tabela.
  */
 export const detectDataType = (value: any): string => {
   if (value === null || value === undefined) {
@@ -260,7 +262,9 @@ export const detectDataType = (value: any): string => {
 }
 
 /**
- * Cria um formatador memoizado para melhor performance
+ * Cria um formatador memoizado para melhor performance.
+ * Utiliza um Map simples como cache, evitando recalcular valores
+ * já formatados.
  */
 export const createMemoizedFormatter = () => {
   const cache = new Map<string, string>()

@@ -44,7 +44,10 @@ const defaultPreferences: TablePreferences = {
   density: 'standard',
 }
 
+// Store global responsável por preferências e estado da tabela de dados
 export const useDataTableStore = create<DataTableState>()(
+  // Persistimos o estado no localStorage usando os middlewares 'persist'
+  // e 'immer' para garantir imutabilidade automática
   persist(
     immer((set) => ({
       preferences: defaultPreferences,
@@ -120,6 +123,7 @@ export const useDataTableStore = create<DataTableState>()(
     {
       name: 'data-table-preferences',
       storage: createJSONStorage(() => localStorage),
+      // Salva apenas partes relevantes do estado para evitar excesso de dados
       partialize: (state) => ({
         columnVisibility: state.preferences.columnVisibility,
         columnOrder: state.preferences.columnOrder,
