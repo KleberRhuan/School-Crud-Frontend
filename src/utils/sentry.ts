@@ -6,7 +6,7 @@ export const initSentry = () => {
   const isProduction = environment === 'production'
   
   if (!dsn) {
-    console.warn('⚠️ [Sentry] DSN não configurado, modo offline')
+    // Modo offline - sem logging
     return
   }
   
@@ -16,11 +16,11 @@ export const initSentry = () => {
     debug: !isProduction,
     tracesSampleRate: isProduction ? 0.1 : 1.0,
     profilesSampleRate: isProduction ? 0.1 : 1.0,
-    release: import.meta.env.VITE_APP_VERSION || 'unknown',
+    release: import.meta.env.VITE_APP_VERSION || '1.0.0',
     dist: import.meta.env.VITE_BUILD_NUMBER || 'unknown',
   })
   
-  console.log(`✅ [Sentry] Inicializado - Ambiente: ${environment}`)
+  // Sentry inicializado para ambiente: ${environment}
 }
 
 /**

@@ -16,7 +16,8 @@ export const forgotPasswordSchema = z.object({
     .transform((email) => email.toLowerCase().trim()),
 })
 
-export const resetPasswordSchema = z.object({
+// Schema para o formulário (inclui confirmPassword para validação)
+export const resetPasswordFormSchema = z.object({
   token: z.string().min(1, 'Token é obrigatório'),
   newPassword: strongPasswordSchema,
   confirmPassword: z.string().min(1, 'Confirmação de senha é obrigatória'),
@@ -25,6 +26,15 @@ export const resetPasswordSchema = z.object({
   path: ['confirmPassword'],
 })
 
-export type ForgotPasswordRequest = z.infer<typeof forgotPasswordSchema>;
-export type ResetPasswordRequest = z.infer<typeof resetPasswordSchema>;
-export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
+// Schema para a requisição API (apenas token e newPassword)
+export const resetPasswordRequestSchema = z.object({
+  token: z.string().min(1, 'Token é obrigatório'),
+  newPassword: strongPasswordSchema,
+})
+
+// Manter o schema antigo para compatibilidade, mas apontar para o formulário
+export const resetPasswordSchema = resetPasswordFormSchema
+
+export type ForgotPasswordRequest = z.infer<typeof forgotPasswordSchema>
+export type ResetPasswordFormData = z.infer<typeof resetPasswordFormSchema>
+export type ResetPasswordRequest = z.infer<typeof resetPasswordRequestSchema>

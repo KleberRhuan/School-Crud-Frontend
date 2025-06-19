@@ -1,61 +1,105 @@
-// === EXPORTAÇÕES PRINCIPAIS ===
-export { useToast } from '@hooks/useToast.ts';
-export { ToastContent } from './ToastContent';
-export { default as ErrorMessageExtractor } from './ErrorMessageExtractor';
-export { default as SentryReporter } from './SentryReporter';
-export { default as ApiErrorInterpreter } from './ApiErrorInterpreter';
-export * from './types';
-export * from './utils';
+export { useToast } from '@/hooks/useToast';
+export { ToastProvider } from '@/providers/ToastProvider';
 
-// === FUNÇÕES DE CONVENIÊNCIA (backward compatibility) ===
-import toast from 'react-hot-toast';
-import ApiErrorInterpreter from './ApiErrorInterpreter';
-import { ApiErrorContext, ToastOptions, ViolationItem } from './types';
-import { ToastContent } from './ToastContent';
+export type { ApiErrorContext, ViolationItem } from './types';
+import { closeSnackbar, enqueueSnackbar, SnackbarKey } from 'notistack';
 
-/**
- * Função única para tratar qualquer erro de API
- * Esta é a função recomendada para uso geral
- */
+interface ToastOptions {
+  duration?: number;
+  persist?: boolean;
+}
+
+
 export const handleApiError = (
   error: unknown, 
-  context?: ApiErrorContext,
   options?: ToastOptions
-): string => {
-  return ApiErrorInterpreter.handle(error, context, options);
+): void => {
+  const message = (error as any)?.response?.data?.message || 
+                 (error as any)?.message || 
+                 'Erro interno do servidor';
+  
+  enqueueSnackbar(message, {
+    variant: 'error',
+    autoHideDuration: options?.duration || 5000,
+    persist: options?.persist || false,
+  });
 };
 
-// Funções de conveniência para retrocompatibilidade
-export const showSuccessToast = (message: string, options?: ToastOptions): string =>
-  toast.custom(
-    (t) => ToastContent({ t, type: 'success', msg: message }),
-    { id: `success-${message.substring(0, 50)}`, duration: 2000, ...options }
-  );
+// === FUNÇÕES DIRETAS DE TOAST ===
+export const showSuccessToast = (
+  message: string,
+  options?: ToastOptions,
+): SnackbarKey => {
+  return enqueueSnackbar(message, {
+    variant: 'success',
+    autoHideDuration: options?.duration || 4000,
+    persist: options?.persist || false,
+  });
+};
 
-export const showErrorToast = (message: string, options?: ToastOptions): string =>
-  toast.custom(
-    (t) => ToastContent({ t, type: 'error', msg: message }),
-    { id: `error-${message.substring(0, 50)}`, duration: 5000, ...options }
-  );
+export const showErrorToast = (
+  message: string,
+  options?: ToastOptions,
+): void => {
+  if (!message) return;
+  
+  enqueueSnackbar(message, {
+    variant: 'error',
+    autoHideDuration: options?.duration || 6000,
+    persist: options?.persist || false,
+  });
+};
 
-export const showWarningToast = (message: string, options?: ToastOptions): string =>
-  toast.custom(
-    (t) => ToastContent({ t, type: 'warning', msg: message }),
-    { id: `warning-${message.substring(0, 50)}`, duration: 4000, ...options }
-  );
+export const showWarningToast = (
+  message: string,
+  options?: ToastOptions,
+): SnackbarKey => {
+  return enqueueSnackbar(message, {
+    variant: 'warning',
+    autoHideDuration: options?.duration || 5000,
+    persist: options?.persist || false,
+  });
+};
 
-export const showInfoToast = (message: string, options?: ToastOptions): string =>
-  toast.custom(
-    (t) => ToastContent({ t, type: 'info', msg: message }),
-    { id: `info-${message.substring(0, 50)}`, duration: 3000, ...options }
-  );
+export const showInfoToast = (
+  message: string,
+  options?: ToastOptions,
+): SnackbarKey => {
+  return enqueueSnackbar(message, {
+    variant: 'info',
+    autoHideDuration: options?.duration || 4000,
+    persist: options?.persist || false,
+  });
+};
 
-export const showValidationErrorToast = (violations: ViolationItem[], options?: ToastOptions): string =>
-  ApiErrorInterpreter.handle({ violations: { items: violations } }, undefined, options);
+export const showValidationErrorToast = (violations: any[], options?: ToastOptions): void => {
+  // Mostrar erro principal
+  enqueueSnackbar('Erro de validação', {
+    variant: 'error',
+    autoHideDuration: options?.duration || 5000,
+    persist: options?.persist || false,
+  });
 
-export const dismissToast = (id?: string): void => toast.dismiss(id);
+  // Mostrar cada violação específica
+  violations.forEach((violation, index) => {
+    setTimeout(() => {
+      enqueueSnackbar(`${violation.field || 'Campo'}: ${violation.message}`, {
+        variant: 'warning',
+        autoHideDuration: 4000,
+      });
+    }, index * 200); // Espaçar as mensagens
+  });
+};
 
-export const dismissAllToasts = (): void => toast.dismiss();
+export const dismissToast = (id?: string): void => {
+  if (id) {
+    closeSnackbar(id);
+  } else {
+    closeSnackbar();
+  }
+};
+
+export const dismissAllToasts = (): void => closeSnackbar();
 
 
 export const showApiErrorToast = handleApiError; 
