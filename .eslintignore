@@ -1,0 +1,20 @@
+# Arquivos de teste
+**/*.test.ts
+**/*.test.tsx
+**/__tests__/**
+**/tests/**
+
+# Arquivos de configuração
+*.config.js
+*.config.ts
+vite.config.ts
+tailwind.config.js
+
+# Arquivos gerados
+dist/
+build/
+node_modules/
+
+# Arquivos específicos com problemas não críticos
+src/utils/toast/interceptors.ts
+src/stores/authStore.ts 

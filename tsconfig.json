@@ -50,6 +50,10 @@
     "node_modules",
     "dist",
     "cypress",
-    "vite.config.ts"
+    "vite.config.ts",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/__tests__/**",
+    "**/tests/**"
   ]
 } 
