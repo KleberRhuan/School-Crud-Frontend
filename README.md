@@ -42,6 +42,7 @@ O sistema permite importar dados de escolas via upload de arquivo CSV, visualiza
 ### Pré-requisitos
 - **Node.js** >= 18.0.0
 - **pnpm** >= 8.0.0 (recomendado) ou npm/yarn
+- **Docker** (opcional, para execução em containers)
 
 ### Clone o repositório
 ```bash
@@ -49,7 +50,61 @@ git clone https://github.com/kleberrhuan/houer-frontend.git
 cd houer-frontend
 ```
 
-### Frontend
+### 🐳 Execução com Docker (Recomendado)
+
+#### Desenvolvimento Local
+```bash
+# Rodar apenas o frontend em modo desenvolvimento
+docker compose --profile dev up houer-frontend-dev
+
+# Com logs em tempo real
+docker compose --profile dev up houer-frontend-dev --build
+
+# Em segundo plano
+docker compose --profile dev up houer-frontend-dev -d
+```
+
+**Acesso**: http://localhost:5173
+
+**Características do ambiente de desenvolvimento:**
+- ✅ Hot reload automático
+- ✅ Volumes montados (edições refletem instantaneamente)
+- ✅ Porta 5173 (padrão do Vite)
+- ✅ Leve e rápido (sem nginx)
+
+#### Produção
+```bash
+# Build e execução para produção
+docker compose up houer-frontend
+
+# Em segundo plano
+docker compose up houer-frontend -d
+```
+
+**Acesso**: http://localhost:3000
+
+**Características do ambiente de produção:**
+- ✅ Build otimizado com nginx
+- ✅ Servir arquivos estáticos
+- ✅ Health checks configurados
+- ✅ Pronto para deploy
+
+#### Comandos Úteis Docker
+```bash
+# Ver logs
+docker compose logs houer-frontend-dev -f
+
+# Parar containers
+docker compose down
+
+# Rebuild forçado
+docker compose build --no-cache
+
+# Remover volumes e imagens
+docker compose down -v --rmi all
+```
+
+### 💻 Execução Local (Sem Docker)
 
 #### 1. Instale as dependências
 ```bash
@@ -73,7 +128,7 @@ pnpm dev
 npm run dev
 ```
 
-A aplicação estará disponível em: **http://localhost:3000**
+A aplicação estará disponível em: **http://localhost:5173**
 
 #### 4. Build para produção
 ```bash
