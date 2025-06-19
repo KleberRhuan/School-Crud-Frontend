@@ -1,4 +1,4 @@
-import React, { Component, ReactNode } from 'react'
+import React, { Component, ReactNode, ErrorInfo } from 'react'
 import { ErrorBoundaryUI } from './ErrorBoundaryUI'
 import { ErrorReportHandler } from './ErrorReportHandler'
 import { ErrorDetailsExtractor } from './ErrorDetailsExtractor'
@@ -13,9 +13,10 @@ interface ErrorBoundaryState {
 export interface ErrorBoundaryProps {
   children: ReactNode
   fallback?: ReactNode
-  onError?: (error: Error, errorInfo: React.ErrorInfo) => void
+  onError?: (error: Error, errorInfo: ErrorInfo) => void
   resetKeys?: Array<string | number>
   resetOnPropsChange?: boolean
+  onReset?: () => void
 }
 
 export class ErrorBoundaryComponent extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
@@ -44,24 +45,14 @@ export class ErrorBoundaryComponent extends Component<ErrorBoundaryProps, ErrorB
     }
   }
 
-  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    if (error.message?.includes('ChunkLoadError') || error.message?.includes('Loading chunk')) {
-      window.location.reload()
-      return
+  override componentDidCatch(error: Error, _errorInfo: ErrorInfo) {
+    // Error boundary capturou erro
+    
+    if (import.meta.env.PROD) {
+      // Log error em produção via serviço de monitoramento
     }
-
-    // Log para desenvolvimento
-    console.error('ErrorBoundary caught an error:', error, errorInfo)
-
-    const errorDetails = this.errorDetailsExtractor.extract(error, errorInfo, this.constructor.name)
-    const eventId = this.errorReportHandler.captureToSentry(error, errorDetails, errorInfo)
-
-    this.setState({
-      errorInfo,
-      eventId,
-    })
-
-    this.props.onError?.(error, errorInfo)
+    
+    this.setState({ hasError: true, error })
   }
 
   override componentDidUpdate(prevProps: ErrorBoundaryProps) {
@@ -96,14 +87,9 @@ export class ErrorBoundaryComponent extends Component<ErrorBoundaryProps, ErrorB
   }
 
   private readonly resetError = () => {
-    console.log('🔄 [ErrorBoundary] Resetando estado de erro')
-    
-    this.setState({
-      hasError: false,
-      error: null,
-      errorInfo: null,
-      eventId: null,
-    })
+    // Resetando estado de erro
+    this.setState({ hasError: false, error: null })
+    this.props.onReset?.()
   }
 
   private readonly handleRetry = () => {

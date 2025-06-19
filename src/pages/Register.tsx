@@ -48,8 +48,8 @@ export function Register() {
       await register(registerData)
       
       navigate({ to: '/dashboard' })
-    } catch (error) {
-      console.error('❌ Erro no registro:', error)
+    } catch {
+      // Error handling já é feito pelo mutation
     }
   }
 

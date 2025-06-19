@@ -1,3 +1,4 @@
+import './polyfills'
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { RouterProvider } from '@tanstack/react-router'
@@ -9,6 +10,7 @@ import { QueryProvider } from '@/providers/QueryProvider'
 import { ToastProvider } from '@/providers/ToastProvider'
 import { router } from './router'
 import './index.css'
+import './toast.css'
 import {darkTheme} from "@/theme/muiTheme.ts";
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

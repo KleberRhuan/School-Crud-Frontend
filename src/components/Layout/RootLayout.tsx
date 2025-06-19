@@ -75,11 +75,23 @@ export function RootLayout() {
                 backgroundColor: 'rgba(15, 23, 42, 0.9)',
                 backdropFilter: 'blur(12px)',
                 borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: 0,
               }}
             >
               <Toolbar>
                 {/* Logo/Title */}
-                <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
+                <Box 
+                  sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    flexGrow: 1,
+                    cursor: 'pointer',
+                    '&:hover': {
+                      opacity: 0.8
+                    }
+                  }}
+                  onClick={() => navigate({ to: '/dashboard' })}
+                >
                   <DashboardIcon sx={{ mr: 2, color: 'primary.main' }} />
                   <Typography variant="h6" component="div">
                     Data Dashboard
@@ -88,14 +100,9 @@ export function RootLayout() {
 
                 {/* User Menu */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    {user?.name}
-                  </Typography>
-                  
                   <IconButton
                     onClick={handleMenuOpen}
                     size="small"
-                    sx={{ ml: 2 }}
                     aria-controls={anchorEl ? 'account-menu' : undefined}
                     aria-haspopup="true"
                     aria-expanded={anchorEl ? 'true' : undefined}

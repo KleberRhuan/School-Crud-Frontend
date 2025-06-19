@@ -1,11 +1,12 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useNavigate } from '@tanstack/react-router'
 import {
   Alert,
   Box,
 } from '@mui/material'
 
-import { ResetPasswordFormData, resetPasswordSchema } from '@/schemas/passwordSchemas'
+import { ResetPasswordFormData, resetPasswordFormSchema } from '@/schemas/passwordSchemas'
 import { useResetPassword } from '@/hooks'
 import { ResetPasswordActions, ResetPasswordFields } from '.'
 
@@ -14,10 +15,11 @@ interface ResetPasswordFormProps {
 }
 
 export function ResetPasswordForm({ token }: Readonly<ResetPasswordFormProps>) {
+  const navigate = useNavigate()
   const resetPasswordMutation = useResetPassword()
 
   const form = useForm<ResetPasswordFormData>({
-    resolver: zodResolver(resetPasswordSchema),
+    resolver: zodResolver(resetPasswordFormSchema),
     mode: 'onChange',
     defaultValues: {
       token,
@@ -28,10 +30,16 @@ export function ResetPasswordForm({ token }: Readonly<ResetPasswordFormProps>) {
   const newPassword = watch('newPassword') ?? ''
 
   const onSubmit = async (data: ResetPasswordFormData) => {
-    resetPasswordMutation.mutate({
-      token: data.token,
-      newPassword: data.newPassword,
-    })
+    try {
+      await resetPasswordMutation.mutateAsync({
+        token: data.token,
+        newPassword: data.newPassword,
+      })
+      
+      navigate({ to: '/login' })
+    } catch {
+      // Error handling já é feito pelo mutation
+    }
   }
 
   return (

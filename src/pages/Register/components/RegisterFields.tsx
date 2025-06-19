@@ -1,4 +1,3 @@
-import React from 'react'
 import { FieldErrors, UseFormRegister } from 'react-hook-form'
 import { IconButton, InputAdornment, TextField } from '@mui/material'
 import { EmailOutlined, LockOutlined, PersonOutlined, Visibility, VisibilityOff } from '@mui/icons-material'

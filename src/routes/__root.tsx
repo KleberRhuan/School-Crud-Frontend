@@ -1,5 +1,5 @@
 import { createRootRoute } from '@tanstack/react-router'
-import { TanStackRouterDevtools } from '@tanstack/router-devtools'
+import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 import { RootLayout } from '@/components/Layout/RootLayout'
 
 function RootLayoutWithDevtools() {

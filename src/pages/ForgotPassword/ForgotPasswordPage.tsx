@@ -24,8 +24,8 @@ export function ForgotPasswordPage() {
     try {
       await forgotPasswordMutation.mutateAsync(data)
       setShowSuccess(true)
-    } catch (error) {
-      console.error(error)
+    } catch {
+      // Error handling já é feito pelo mutation
     }
   }
 

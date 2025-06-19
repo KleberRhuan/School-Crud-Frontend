@@ -28,18 +28,12 @@ export function LoginForm({ redirectPath }: LoginFormProps) {
     e.preventDefault()
     
     try {
-      console.log('🔐 Tentando fazer login...')
       await login(formData)
       
       const targetPath = redirectPath ?? '/dashboard'
-      console.log('✅ Login realizado com sucesso, redirecionando para:', targetPath)
-      
-      navigate({ 
-        to: targetPath,
-        replace: true
-      })
-    } catch (error) {
-      console.error('❌ Erro no login:', error)
+      navigate({ to: targetPath })
+    } catch {
+      // Error handling já é feito pelo mutation
     }
   }
 

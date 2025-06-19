@@ -8,6 +8,8 @@ import { ResetPasswordPage } from '@/pages/ResetPassword/ResetPasswordPage'
 import { AuthGuard, GuestGuard } from '@/components/guards/AuthGuard'
 import { useAuthStore } from '@/stores/authStore'
 import { Route as rootRoute } from '@/routes/__root'
+import { SchoolsPage } from '@/features/schools/pages/SchoolsPage'
+import { initializeSession } from '@/hooks/useAuth'
 
 const GuestLogin = () => (
   <GuestGuard>
@@ -71,20 +73,11 @@ const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
   beforeLoad: async () => {
-    console.log('🏠 Carregando página inicial...')
-    const { isInitialized, initialize } = useAuthStore.getState()
+    await initializeSession()
+    const {isAuthenticated} = useAuthStore.getState()
 
-    if (!isInitialized) {
-      console.log('🏠 Inicializando sessão...')
-        await initialize()
-    }
-
-    const { isAuthenticated } = useAuthStore.getState()
-    console.log('🏠 Usuário autenticado:', isAuthenticated)
-    
     const redirectTo = isAuthenticated ? '/dashboard' : '/login'
-    console.log('🏠 Redirecionando para:', redirectTo)
-    
+
     throw redirect({ to: redirectTo })
   },
 })
@@ -125,6 +118,16 @@ const dashboardRoute = createRoute({
   ),
 })
 
+const schoolsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/schools',
+  component: () => (
+    <AuthGuard>
+      <SchoolsPage />
+    </AuthGuard>
+  ),
+})
+
 const notFoundRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/404',
@@ -145,6 +148,7 @@ const routeTree = rootRoute.addChildren([
   dashboardRoute,
   profileRoute,
   settingsRoute,
+  schoolsRoute,
   notFoundRoute,
 ])
 

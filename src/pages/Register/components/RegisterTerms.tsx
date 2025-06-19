@@ -1,4 +1,3 @@
-import React from 'react'
 import { FieldErrors, UseFormRegister } from 'react-hook-form'
 import { Checkbox, FormControlLabel, Link, Typography } from '@mui/material'
 

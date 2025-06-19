@@ -5,7 +5,7 @@ import { useSearch } from '@tanstack/react-router'
 import { Lock } from '@mui/icons-material'
 import { Box } from '@mui/material'
 
-import { ResetPasswordFormData, resetPasswordSchema } from '@/schemas/passwordSchemas'
+import { ResetPasswordFormData, resetPasswordFormSchema } from '@/schemas/passwordSchemas'
 import { useValidateResetToken } from '@/hooks'
 import { AuthContainer } from '@/components/Auth'
 import {
@@ -27,7 +27,7 @@ export function ResetPasswordPage() {
 
   // Form apenas para gerenciar o token
   const { setValue } = useForm<ResetPasswordFormData>({
-    resolver: zodResolver(resetPasswordSchema),
+    resolver: zodResolver(resetPasswordFormSchema),
     mode: 'onChange',
     defaultValues: {
       token: token || '',
