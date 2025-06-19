@@ -1,31 +1,31 @@
-import { ApiError } from '@/lib/api-client.ts'
-import { useToast } from '@/hooks/useToast.ts'
+import { showErrorToast } from '@/utils/toast'
 
-/**
- * Classe para tratamento de erros
- */
 export class ErrorHandler {
-  public static handleMutationError(
-    method: string, 
-    url: string, 
-    error: ApiError, 
-    showError: boolean,
-    toastService?: ReturnType<typeof useToast>
-  ): void {
-    console.error(`❌ [useApi${method}] Erro em ${method} ${url}:`, error)
-
-    if (showError && this.shouldShowErrorToast(error)) {
-      if (toastService) {
-        toastService.error(error.message || `Erro na operação ${method}`)
-      } else {
-        // Fallback usando o hook diretamente (apenas em contextos onde hooks são permitidos)
-        console.error(`Toast service not available: ${error.message || `Erro na operação ${method}`}`)
-      }
+  private static getErrorMessage(error: any): string {
+    if (error?.response?.data?.message) {
+      return error.response.data.message
     }
+    
+    if (error?.message) {
+      return error.message
+    }
+    
+    return 'Erro interno do servidor'
   }
 
-  private static shouldShowErrorToast(error: ApiError): boolean {
-    // Não mostrar toast para erros 401 (será tratado pelo interceptor)
+  static shouldRetry(error: any): boolean {
     return error.status !== 401
+  }
+
+  static handleError(error: any, _method: string, _url: string): never {
+    const errorMessage = this.getErrorMessage(error)
+    
+    try {
+      showErrorToast(errorMessage)
+    } catch {
+      // Toast service não disponível - erro silencioso
+    }
+    
+    throw error
   }
 } 

@@ -3,7 +3,7 @@ import { createJSONStorage, devtools, persist } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 import { useShallow } from 'zustand/react/shallow'
 import { authApi, setAuthToken } from '@/lib/api-client'
-import { devLog, runWithLoading } from './utils'
+import { runWithLoading } from './utils'
 import {LoginRequest, RegisterRequest} from "@/schemas/apiSchemas.ts";
 import {AuthState} from "@/types";
 
@@ -35,9 +35,6 @@ export const useAuthStore = create<AuthState>()(
                 state.isAuthenticated = true
               })
 
-              devLog.success('Login realizado com sucesso')
-              devLog.info('🔐 AccessToken armazenado em memória')
-              devLog.info('🍪 RefreshToken armazenado em cookie HttpOnly pelo servidor')
             })
           },
 
@@ -45,8 +42,6 @@ export const useAuthStore = create<AuthState>()(
             return runAsync(async () => {
               await authApi.register(data)
 
-              devLog.success('Registro realizado com sucesso')
-              devLog.info('📧 Email de verificação enviado')
             })
           },
 
@@ -55,10 +50,7 @@ export const useAuthStore = create<AuthState>()(
               try {
                 await authApi.logout()
                 
-                devLog.success('Logout server-side realizado')
-                devLog.info('🍪 Cookie REFRESH_TOKEN removido pelo servidor')
               } catch (error) {
-                devLog.warn('Erro ao fazer logout na API:', error)
               } finally {
                 setAuthToken(null)
                 set((state) => {
@@ -67,15 +59,13 @@ export const useAuthStore = create<AuthState>()(
                   state.isAuthenticated = false
                 })
                 
-                devLog.info('🧹 Sessão local limpa')
-                devLog.info('🔐 AccessToken removido da memória')
               }
             })
           },
 
           refreshToken: async () => {
             try {
-              devLog.info('🔄 Renovando token usando cookie HttpOnly...')
+              // Renovando token usando cookie HttpOnly...
 
               const response = await authApi.refresh()
               const { accessToken } = response
@@ -86,10 +76,7 @@ export const useAuthStore = create<AuthState>()(
                 state.error = null
               })
               
-              devLog.success('Token renovado com sucesso')
             } catch (error) {
-              devLog.warn('Erro ao renovar token:', error)
-              devLog.info('🍪 Cookie REFRESH_TOKEN expirado ou inválido')
               
               get().clearSession()
               throw error
@@ -102,9 +89,6 @@ export const useAuthStore = create<AuthState>()(
                 state.isLoading = true
               })
 
-              devLog.info('🚀 Inicializando sessão...')
-              devLog.info('🍪 Verificando cookie REFRESH_TOKEN...')
-
               await get().refreshToken()
               const user = await authApi.getCurrentUser()
 
@@ -114,11 +98,8 @@ export const useAuthStore = create<AuthState>()(
                 state.isInitialized = true
                 state.isLoading = false
               })
-              
-              devLog.success('Sessão inicializada com sucesso')
-              devLog.info('👤 Usuário:', user.name)
+
             } catch {
-              devLog.info('Nenhuma sessão válida encontrada')
               
               set((state) => {
                 state.user = null
@@ -168,7 +149,6 @@ export const useAuthStore = create<AuthState>()(
               state.error = null
               state.isLoading = false
             })
-            devLog.info('🧹 Sessão limpa')
           },
         }}),
       {

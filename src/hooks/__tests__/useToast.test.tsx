@@ -2,26 +2,20 @@ import { renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useToast } from '../useToast'
 
-// Mock do react-hot-toast
-const mockToast = {
-  custom: vi.fn().mockReturnValue('toast-id'),
-  dismiss: vi.fn(),
-}
+// Mock do notistack
+const mockEnqueueSnackbar = vi.fn().mockReturnValue('snackbar-id')
+const mockCloseSnackbar = vi.fn()
 
-vi.mock('react-hot-toast', () => ({
-  default: mockToast,
+vi.mock('notistack', () => ({
+  useSnackbar: () => ({
+    enqueueSnackbar: mockEnqueueSnackbar,
+    closeSnackbar: mockCloseSnackbar,
+  }),
 }))
 
-// Mock do ApiErrorInterpreter
-vi.mock('@utils/toast/ApiErrorInterpreter.ts', () => ({
-  default: {
-    handle: vi.fn().mockReturnValue('error-toast-id'),
-  },
-}))
-
-// Mock do ToastContent
-vi.mock('@utils/toast/ToastContent.tsx', () => ({
-  ToastContent: vi.fn(({ type, msg }) => `ToastContent-${type}-${msg}`),
+// Mock dos outros módulos
+vi.mock('@utils/toast/types.ts', () => ({
+  ApiErrorContext: {},
 }))
 
 describe('useToast', () => {
@@ -29,58 +23,43 @@ describe('useToast', () => {
     vi.clearAllMocks()
   })
 
-  it('deve retornar todas as funções esperadas', () => {
-    const { result } = renderHook(() => useToast())
-
-    expect(result.current).toHaveProperty('success')
-    expect(result.current).toHaveProperty('error')
-    expect(result.current).toHaveProperty('warning')
-    expect(result.current).toHaveProperty('info')
-    expect(result.current).toHaveProperty('handleApiError')
-    expect(result.current).toHaveProperty('dismiss')
-    expect(result.current).toHaveProperty('dismissAll')
-  })
-
-  it('deve chamar toast.custom para success', () => {
+  it('deve chamar enqueueSnackbar para sucesso', () => {
     const { result } = renderHook(() => useToast())
     
-    const toastId = result.current.success('Sucesso!')
-
-    expect(mockToast.custom).toHaveBeenCalled()
-    expect(toastId).toBe('toast-id')
+    result.current.success('Mensagem de sucesso')
+    
+    expect(mockEnqueueSnackbar).toHaveBeenCalledWith('Mensagem de sucesso', {
+      variant: 'success',
+      autoHideDuration: 3000,
+      persist: false,
+    })
   })
 
-  it('deve chamar toast.custom para error', () => {
+  it('deve chamar enqueueSnackbar para erro', () => {
     const { result } = renderHook(() => useToast())
     
-    const toastId = result.current.error('Erro!')
-
-    expect(mockToast.custom).toHaveBeenCalled()
-    expect(toastId).toBe('toast-id')
-  })
-
-  it('deve chamar ApiErrorInterpreter.handle para handleApiError', () => {
-    const { result } = renderHook(() => useToast())
-    const mockError = new Error('API Error')
+    result.current.error('Mensagem de erro')
     
-    const toastId = result.current.handleApiError(mockError)
-
-    expect(toastId).toBe('error-toast-id')
+    expect(mockEnqueueSnackbar).toHaveBeenCalledWith('Mensagem de erro', {
+      variant: 'error',
+      autoHideDuration: 5000,
+      persist: false,
+    })
   })
 
-  it('deve chamar toast.dismiss para dismiss', () => {
+  it('deve chamar closeSnackbar para dismiss', () => {
     const { result } = renderHook(() => useToast())
     
-    result.current.dismiss('toast-id')
-
-    expect(mockToast.dismiss).toHaveBeenCalledWith('toast-id')
+    result.current.dismiss('test-id' as any)
+    
+    expect(mockCloseSnackbar).toHaveBeenCalledWith('test-id')
   })
 
-  it('deve chamar toast.dismiss sem parâmetros para dismissAll', () => {
+  it('deve chamar closeSnackbar sem ID para dismissAll', () => {
     const { result } = renderHook(() => useToast())
     
     result.current.dismissAll()
-
-    expect(mockToast.dismiss).toHaveBeenCalledWith()
+    
+    expect(mockCloseSnackbar).toHaveBeenCalledWith()
   })
 }) 

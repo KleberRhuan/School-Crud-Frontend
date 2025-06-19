@@ -20,15 +20,10 @@ let refreshQueue: QueuedRequest[] = []
 /**
  * Logs detalhados da fila (apenas em desenvolvimento)
  */
-const logQueueState = (action: string, requestId?: string): void => {
+const logQueueState = (_action: string, _requestId?: string): void => {
   if (!FEATURE_FLAGS.ENABLE_QUEUE_LOGS) return
   
-  const queueSize = refreshQueue.length
-  console.log(`🔄 [REFRESH QUEUE] ${action}`, {
-    requestId,
-    queueSize,
-    config: QUEUE_CONFIG,
-  })
+  // Queue action: ${action}, ID: ${requestId}, Size: ${queueSize}
 }
 
 /**
@@ -42,7 +37,7 @@ const cleanupExpiredRequests = (): void => {
 
   if (expiredRequests.length > 0) {
     if (FEATURE_FLAGS.ENABLE_QUEUE_LOGS) {
-      console.warn(`🧹 Limpando ${expiredRequests.length} requests expirados da fila`)
+      // Cleaning expired requests: ${expiredRequests.length}
     }
 
     expiredRequests.forEach(req => {
@@ -66,7 +61,7 @@ export const enqueueRequest = (
 ): Promise<AxiosResponse> => {
   return new Promise((resolve, reject) => {
     if (refreshQueue.length >= QUEUE_CONFIG.MAX_QUEUE_SIZE) {
-      const error : ApiError = ApiError.requestRetriesExceeded();
+      const error = ApiError.requestRetriesExceeded()
       reject(error)
       return
     }
@@ -99,9 +94,6 @@ export const enqueueRequest = (
  * Processa a fila após refresh bem-sucedido
  */
 export const processQueue = (accessToken: string): void => {
-  const startTime = Date.now()
-  const queueSize = refreshQueue.length
-
   logQueueState('PROCESSING_QUEUE')
 
   refreshQueue.forEach(request => {
@@ -109,9 +101,9 @@ export const processQueue = (accessToken: string): void => {
       const queueTime = Date.now() - request.timestamp
       updateAverageQueueTime(queueTime)
       request.resolve(accessToken)
-    } catch (error) {
+    } catch {
       if (FEATURE_FLAGS.ENABLE_QUEUE_LOGS) {
-        console.error(`❌ Erro ao processar request ${request.id}:`, error)
+        // Error processing queue request
       }
       request.reject(new ApiError(500, 'Queue Processing Error'))
     }
@@ -121,8 +113,7 @@ export const processQueue = (accessToken: string): void => {
   incrementSuccessfulRefreshes()
 
   if (FEATURE_FLAGS.ENABLE_QUEUE_LOGS) {
-    const processingTime = Date.now() - startTime
-    console.log(`✅ Fila processada com sucesso: ${queueSize} requests em ${processingTime}ms`)
+    // Queue processed in ${processingTime}ms, handled ${queueSize} requests
   }
 }
 
@@ -130,8 +121,6 @@ export const processQueue = (accessToken: string): void => {
  * Limpa a fila em caso de erro
  */
 export const clearQueue = (error: ApiError): void => {
-  const queueSize = refreshQueue.length
-
   logQueueState('CLEARING_QUEUE_ON_ERROR')
 
   refreshQueue.forEach(request => {
@@ -142,7 +131,7 @@ export const clearQueue = (error: ApiError): void => {
   incrementFailedRefreshes()
 
   if (FEATURE_FLAGS.ENABLE_QUEUE_LOGS) {
-    console.error(`❌ Fila limpa devido a erro: ${queueSize} requests rejeitados`)
+    // Queue cleared due to error, rejected ${queueSize} requests
   }
 }
 
@@ -158,7 +147,6 @@ export const resetQueue = (): void => {
   refreshQueue = []
 }
 
-// Configurar limpeza automática
 if (typeof window !== 'undefined') {
   setInterval(cleanupExpiredRequests, QUEUE_CONFIG.CLEANUP_INTERVAL)
 } 

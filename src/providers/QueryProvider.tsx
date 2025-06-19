@@ -49,7 +49,9 @@ const QueryStatsProvider: React.FC<{
         cacheSize: `${JSON.stringify(cache.getAll()).length} bytes`,
       }
       
-      console.log('📊 [QueryStats] Estatísticas do cache:', stats)
+      if (import.meta.env.DEV) {
+        console.log('📊 [QueryStats] Estatísticas do cache:', stats)
+      }
     },
 
     clearAllCache: () => {

@@ -8,8 +8,7 @@ import { DefaultQueryConfig } from '@/config/queryConfig.ts'
 const createRetryFunction = (maxRetries: number, rateLimitRetries: number) => 
   (failureCount: number, error: unknown) => {
     const apiError = error as ApiError
-    
-    // Não tentar novamente para erros 4xx client errors (exceto alguns específicos)
+
     if (apiError.status && apiError.status >= 400 && apiError.status < 500) {
       if (![408, 409, 429].includes(apiError.status)) {
         return false

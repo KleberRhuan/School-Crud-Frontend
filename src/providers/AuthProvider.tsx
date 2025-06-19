@@ -1,4 +1,4 @@
-import { ReactNode, useEffect } from 'react'
+import { ReactNode } from 'react'
 import { FullPageLoader } from '@/components/FullPageLoader'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -7,28 +7,19 @@ interface AuthProviderProps {
 }
 
 /**
- * AuthProvider - Provedor de contexto de autenticação
- * Inicializa a sessão do usuário e controla o estado de carregamento
+ * AuthProvider - Inicializa a sessão do usuário antes de renderizar a aplicação
  */
 export function AuthProvider({ children }: Readonly<AuthProviderProps>) {
-  const { isReady, isLoading, isInitialized, initialize } = useAuth()
-
-  useEffect(() => {
-    if (!isInitialized) {
-      console.log('🚀 AuthProvider: Inicializando sessão...')
-      initialize()
-    }
-  }, [isInitialized, initialize])
+  const { isReady, isLoading } = useAuth()
 
   const getLoadingDescription = () => {
-    if (!isInitialized) return 'Configurando ambiente...'
     if (isLoading) return 'Validando credenciais...'
-    return 'Finalizando...'
+    return 'Carregando aplicação...'
   }
-  
+
   if (!isReady) {
     return (
-      <FullPageLoader
+      <FullPageLoader 
         title="Inicializando aplicação"
         subtitle="Verificando sessão..."
         description={getLoadingDescription()}

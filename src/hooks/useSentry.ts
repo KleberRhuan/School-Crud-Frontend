@@ -9,11 +9,11 @@ export const useSentryUserContext = () => {
   const { user, isAuthenticated } = useAuthStore()
 
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (isAuthenticated && user?.id) {
       Sentry.setUser({
-        id: user.id.toString(),
-        email: user.email,
-        username: user.name,
+        id: user.id,
+        email: user.email || '',
+        username: user.name || '',
       })
     } else {
       Sentry.setUser(null)
@@ -29,7 +29,7 @@ export const useSentryCapture = () => {
     Sentry.withScope((scope) => {
       if (contexts) {
         Object.entries(contexts).forEach(([key, value]) => {
-          scope.setContext(key, value)
+          scope.setContext(key, value as Record<string, unknown>)
         })
       }
       Sentry.captureException(error)

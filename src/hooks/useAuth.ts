@@ -12,7 +12,7 @@ import {
   type ForgotPasswordRequest,
   forgotPasswordSchema,
   type ResetPasswordRequest,
-  resetPasswordSchema
+  resetPasswordRequestSchema
 } from '@/schemas/passwordSchemas.ts'
 import { 
   useAuthError, 
@@ -37,7 +37,6 @@ export const useAuth = () => {
   const authStore = useAuthStore()
 
   return {
-    // Estados
     isReady: isInitialized && !isLoading,
     isLoading,
     isAuthenticated,
@@ -182,7 +181,7 @@ export const useResetPassword = () => {
     showSuccessToast: 'Senha redefinida com sucesso! Você pode fazer login com sua nova senha.',
     showErrorToast: false,
     onMutate: (variables) => {
-      resetPasswordSchema.parse(variables)
+      resetPasswordRequestSchema.parse(variables)
     }
   })
 }
@@ -199,11 +198,16 @@ export const usePasswordResetFlow = () => {
     forgotPassword,
     resetPassword,
     
-    // Query hook para validação
-    useValidateToken: useValidateResetToken,
-    
-    // Estados de loading
-    isRequestingReset: forgotPassword.isPending,
-    isResetting: resetPassword.isPending,
+    // Estado
+    isProcessing: forgotPassword.isPending || resetPassword.isPending,
+    error: forgotPassword.error || resetPassword.error,
   }
+}
+
+/**
+ * Função para inicializar sessão (compatibilidade com router)
+ */
+export const initializeSession = async (): Promise<void> => {
+  const store = useAuthStore.getState()
+  await store.initialize()
 }

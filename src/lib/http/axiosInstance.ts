@@ -11,7 +11,6 @@ export const api = axios.create({
   timeout: API_CONFIG.TIMEOUT,
   withCredentials: true,
   headers: {
-    'Content-Type': 'application/json',
     'X-Requested-With': 'XMLHttpRequest',
   },
 })

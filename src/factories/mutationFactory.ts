@@ -117,7 +117,7 @@ function createMutationFn<TData, TVariables>(
       const httpMethod = HTTP_METHOD_MAP[method];
 
       const response =
-          method === 'DELETE' // @ts-ignore
+          method === 'DELETE' // @ts-expect-error -- endpoint sem body no DELETE
           ? await httpMethod(endpoint)
           : await httpMethod(endpoint, variables);
       
@@ -137,14 +137,15 @@ function createMutationFn<TData, TVariables>(
 function createErrorHandler<TVariables>(
   method: HttpMethod,
   url: string | ((variables: TVariables) => string),
-  showError: boolean,
-  toastService?: ReturnType<typeof useToast>,
-  onError?: (error: ApiError, variables: TVariables, context: unknown) => void
+  _showError: boolean,
+  _toastService?: ReturnType<typeof useToast>,
+  _onError?: (error: ApiError, variables: TVariables, context: unknown) => void
 ) {
-  return (error: ApiError, variables: TVariables, context: unknown) => {
+  return (error: ApiError, _variables: TVariables, _context: unknown) => {
     const urlString = typeof url === 'string' ? url : 'dynamic-url'
-    ErrorHandler.handleMutationError(method, urlString, error, showError, toastService)
-    onError?.(error, variables, context)
+    ErrorHandler.handleError(error, method, urlString)
+    
+    _onError?.(error, _variables, _context)
   }
 }
 

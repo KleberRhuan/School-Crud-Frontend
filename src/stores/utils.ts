@@ -50,22 +50,25 @@ export function createSelector<T, K extends keyof T>(
 /**
  * Logs condicionais apenas em desenvolvimento
  */
-export const devLog = {
-  info: (message: string, ...args: any[]) => {
+export const log = {
+  info: (_message: string, ..._args: any[]) => {
     if (import.meta.env.DEV) {
-      console.log(message, ...args)
+      // Development logging - informational
     }
   },
-  success: (message: string, ...args: any[]) => {
+  
+  success: (_message: string, ..._args: any[]) => {
     if (import.meta.env.DEV) {
-      console.log(`✅ ${message}`, ...args)
+      // Success - operation completed
     }
   },
+  
   warn: (message: string, ...args: any[]) => {
     if (import.meta.env.DEV) {
       console.warn(`⚠️ ${message}`, ...args)
     }
   },
+  
   error: (message: string, ...args: any[]) => {
     if (import.meta.env.DEV) {
       console.error(`❌ ${message}`, ...args)

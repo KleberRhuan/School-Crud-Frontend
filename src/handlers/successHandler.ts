@@ -1,5 +1,6 @@
 import { QueryKey, useQueryClient } from '@tanstack/react-query'
-import { useToast } from '@/hooks/useToast.ts'
+import { showSuccessToast } from '@/utils/toast'
+import { useToast } from '@/hooks/useToast'
 
 /**
  * Classe para tratamento de sucesso
@@ -50,14 +51,15 @@ export class SuccessHandler {
       const message = typeof showSuccess === 'string' ? showSuccess : defaultMessage
       if (toastService) {
         toastService.success(message)
-      } else {
-        // Fallback log quando toast service não está disponível
-        console.log(`✅ SUCCESS: ${message}`)
       }
     }
   }
 
-  private static logSuccess(method: string, url: string): void {
-    console.log(`✅ [useApi${method}] ${method} ${url} bem-sucedido`)
+  private static logSuccess(method: string, _url: string): void {
+    try {
+      showSuccessToast(`${method} realizado com sucesso`)
+    } catch {
+      // Toast não disponível
+    }
   }
 } 

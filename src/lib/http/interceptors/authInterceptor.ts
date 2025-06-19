@@ -1,17 +1,17 @@
 import type { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import { ApiError } from '@/lib/http'
-import { FEATURE_FLAGS, QUEUE_CONFIG } from '../../config/constants'
+import { QUEUE_CONFIG } from '../../config/constants'
 import { clearQueue, enqueueRequest, getQueueSize, processQueue } from '../queue/refreshQueue'
 import { getExtendedMetrics } from '../queue/refreshMetrics'
 import { createAuthService } from "@/services/authService.ts";
 import {api} from "@/lib/api-client.ts";
+import { useAuthStore } from '@/stores/authStore'
 
 /**
  * Estado privado do interceptador (isolado neste módulo)
  */
 let isRefreshing = false
 let refreshPromise: Promise<string> | null = null
-let refreshStartTime: number = 0
 let refreshRetryCount: number = 0
 
 const authService = createAuthService(api);
@@ -21,44 +21,20 @@ const authService = createAuthService(api);
  */
 const performRefresh = async (): Promise<string> => {
   if (refreshPromise) {
-    if (FEATURE_FLAGS.ENABLE_QUEUE_LOGS) {
-      console.log('🔄 Refresh já em andamento, aguardando...')
-    }
     return refreshPromise
   }
 
-  refreshStartTime = Date.now()
   refreshRetryCount++
 
-  if (FEATURE_FLAGS.ENABLE_QUEUE_LOGS) {
-    console.log('🔄 [REFRESH] Iniciando refresh token...')
-  }
-
   refreshPromise = (async (): Promise<string> => {
-    try {
-      const response = await authService.refresh()
-      const {accessToken} = response
-      const refreshTime = Date.now() - refreshStartTime
-
-      if (FEATURE_FLAGS.ENABLE_QUEUE_LOGS) {
-        console.log(`✅ Refresh concluído com sucesso em ${refreshTime}ms`)
-      }
-
-      return accessToken
-    } catch (error) {
-      const refreshTime = Date.now() - refreshStartTime
-      if (FEATURE_FLAGS.ENABLE_QUEUE_LOGS) {
-        console.error(`❌ Refresh falhou após ${refreshTime}ms:`, error)
-      }
-      throw error
-    }
+    const response = await authService.refresh()
+    const {accessToken} = response
+    return accessToken
   })()
 
-  try {
-    return await refreshPromise
-  } finally {
+  return await refreshPromise.finally(() => {
     refreshPromise = null
-  }
+  })
 }
 
 /**
@@ -115,9 +91,15 @@ const responseErrorInterceptor = (api: AxiosInstance) => async (error: AxiosErro
       }
 
       return api(originalRequest)
-    } catch (refreshError) {
+    } catch {
       const sessionError : ApiError = ApiError.sessionExpired();
       clearQueue(sessionError)
+      // Limpa a sessão no Zustand para evitar loops de loading na UI
+      try {
+        useAuthStore.getState().clearSession()
+      } catch {
+        // Não foi possível limpar a sessão - erro ignorado
+      }
       throw sessionError
     } finally {
       isRefreshing = false
@@ -142,10 +124,6 @@ export const registerAuthInterceptor = (): void => {
     responseInterceptor,
     responseErrorInterceptor(api)
   )
-
-  if (FEATURE_FLAGS.ENABLE_QUEUE_LOGS) {
-    console.log('🔐 Interceptadores de autenticação registrados')
-  }
 }
 
 /**
@@ -160,6 +138,5 @@ export const getRefreshQueueMetrics = () => {
  */
 export const resetAuthInterceptorState = (): void => {
   isRefreshing = false
-  refreshPromise = null
   refreshRetryCount = 0
 } 

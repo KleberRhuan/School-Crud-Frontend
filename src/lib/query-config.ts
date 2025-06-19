@@ -78,7 +78,5 @@ export const createAppQueryClient = (): QueryClient => {
     defaultOptions: defaultQueryConfig,
   })
   
-  console.log('⚙️ [QueryClient] Cliente configurado com configurações padrão')
-  
   return queryClient
 } 
