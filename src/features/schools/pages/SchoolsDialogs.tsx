@@ -20,6 +20,10 @@ interface SchoolsDialogsProps {
   isSchoolDetailOpen: boolean
   setSchoolDetailOpen: (open: boolean) => void
   selectedSchool: School | null
+  onSchoolCreated?: ((school: School) => void) | undefined
+  onSchoolUpdated?: ((school: School) => void) | undefined
+  onSchoolDeleted?: (() => void) | undefined
+  onImportCompleted?: (() => void) | undefined
 }
 
 export const SchoolsDialogs: React.FC<SchoolsDialogsProps> = ({
@@ -36,6 +40,10 @@ export const SchoolsDialogs: React.FC<SchoolsDialogsProps> = ({
   isSchoolDetailOpen,
   setSchoolDetailOpen,
   selectedSchool,
+  onSchoolCreated,
+  onSchoolUpdated,
+  onSchoolDeleted,
+  onImportCompleted,
 }) => (
   <>
     <FilterDialog
@@ -53,12 +61,16 @@ export const SchoolsDialogs: React.FC<SchoolsDialogsProps> = ({
     <ImportDialog
       open={isImportDialogOpen}
       onClose={() => setImportDialogOpen(false)}
+      onImportCompleted={onImportCompleted}
     />
 
     <SchoolFormDialog
       open={isSchoolFormOpen}
       onClose={() => setSchoolFormOpen(false)}
       selectedSchool={selectedSchool}
+      onSchoolCreated={onSchoolCreated}
+      onSchoolUpdated={onSchoolUpdated}
+      onSchoolDeleted={onSchoolDeleted}
     />
 
     <SchoolDetailDialog
