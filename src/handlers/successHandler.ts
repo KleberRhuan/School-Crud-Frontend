@@ -1,5 +1,4 @@
 import { QueryKey, useQueryClient } from '@tanstack/react-query'
-import { showSuccessToast } from '@/utils/toast'
 import { useToast } from '@/hooks/useToast'
 
 /**
@@ -7,8 +6,6 @@ import { useToast } from '@/hooks/useToast'
  */
 export class SuccessHandler {
   public static createMutationSuccessHandler<TData, TVariables>(
-    method: string,
-    url: string,
     options: {
       queryClient: ReturnType<typeof useQueryClient>
       invalidateQueries: QueryKey[]
@@ -25,7 +22,6 @@ export class SuccessHandler {
         options.successMessage, 
         options.toastService
       )
-      this.logSuccess(method, url)
       
       if (options.onSuccess) {
         options.onSuccess(data, variables, context)
@@ -52,14 +48,6 @@ export class SuccessHandler {
       if (toastService) {
         toastService.success(message)
       }
-    }
-  }
-
-  private static logSuccess(method: string, _url: string): void {
-    try {
-      showSuccessToast(`${method} realizado com sucesso`)
-    } catch {
-      // Toast não disponível
     }
   }
 } 
