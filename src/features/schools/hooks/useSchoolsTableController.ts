@@ -37,7 +37,6 @@ export const useSchoolsTableController = ({
     setIsGridReady
   } = useTableControllerState()
   
-  // Query para buscar dados das escolas
   const { data: schoolsResponse, isLoading, error, refetch } = useApiQuery<PaginatedResponse<School>>(
     ['schools', 'table', filters],
     '/schools',
@@ -51,9 +50,13 @@ export const useSchoolsTableController = ({
       },
     },
     {
-      // Reduzir staleTime para forçar atualizações mais frequentes
       staleTime: 0,
-      gcTime: 5 * 60 * 1000, // 5 minutos
+      gcTime: 0,
+      refetchOnMount: true,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+      retry: 3,
+      retryDelay: 1000
     }
   )
 

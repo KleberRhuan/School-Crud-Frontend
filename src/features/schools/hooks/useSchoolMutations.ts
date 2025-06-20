@@ -8,28 +8,45 @@ const useSchoolQueryInvalidation = () => {
   const queryClient = useQueryClient()
 
   return {
-    invalidateAll: () => {
-      queryClient.invalidateQueries({ 
+    invalidateAll: async () => {
+      await queryClient.removeQueries({ 
         queryKey: ['schools'],
         exact: false 
       })
-      queryClient.invalidateQueries({ 
-        queryKey: ['schools-batch'],
-        exact: false 
-      })
-      queryClient.invalidateQueries({ queryKey: ['school-metrics-list'] })
-      queryClient.invalidateQueries({ queryKey: ['school-columns'] })
       
-      queryClient.refetchQueries({ 
+      await queryClient.invalidateQueries({ 
         queryKey: ['schools'],
-        exact: false 
+        exact: false,
+        refetchType: 'all'
+      })
+      
+      await queryClient.invalidateQueries({ 
+        queryKey: ['school-metrics-list'],
+        exact: true
+      })
+      await queryClient.invalidateQueries({ 
+        queryKey: ['school-columns'],
+        exact: true
+      })
+      
+      await queryClient.refetchQueries({ 
+        queryKey: ['schools'],
+        exact: false,
+        type: 'all'
       })
     },
-    forceRefreshAll: () => {
-      // Função mais agressiva que limpa cache e força reload
-      queryClient.resetQueries({
+    forceRefreshAll: async () => {
+      // Reset completo do cache
+      await queryClient.resetQueries({
         queryKey: ['schools'],
         exact: false
+      })
+      
+      // Força refetch de tudo
+      await queryClient.refetchQueries({
+        queryKey: ['schools'],
+        exact: false,
+        type: 'all'
       })
     },
     invalidateSchool: (code: number) => {
@@ -39,20 +56,22 @@ const useSchoolQueryInvalidation = () => {
     removeSchool: (code: number) => {
       queryClient.removeQueries({ queryKey: ['school', code] })
       queryClient.removeQueries({ queryKey: ['school-metrics', code] })
+      
       queryClient.invalidateQueries({ 
         queryKey: ['schools'],
-        exact: false
+        exact: false,
+        refetchType: 'all'
       })
-      // Forçar refetch após remoção
+      
       queryClient.refetchQueries({ 
         queryKey: ['schools'],
-        exact: false 
+        exact: false,
+        type: 'all'
       })
     }
   }
 }
 
-// Hook público para forçar refresh em casos extremos
 export const useForceSchoolsRefresh = () => {
   const { forceRefreshAll } = useSchoolQueryInvalidation()
   return forceRefreshAll
@@ -67,15 +86,8 @@ export const useCreateSchool = () => {
     {
       successMessage: 'Escola criada com sucesso!',
       onSuccess: async (newSchool) => {
-        // Invalidar queries para atualizar a tabela
-        invalidateAll()
+        await invalidateAll()
         
-        // Pequeno delay para garantir que o backend processou
-        setTimeout(() => {
-          invalidateAll()
-        }, 100)
-        
-        // Notificação adicional com detalhes
         success(
           `Escola "${newSchool.schoolName}" (Código: ${newSchool.code}) criada com sucesso!`,
           { duration: 4000 }
@@ -90,7 +102,7 @@ export const useCreateSchool = () => {
 }
 
 export const useUpdateSchool = () => {
-  const { invalidateAll, invalidateSchool } = useSchoolQueryInvalidation()
+  const { invalidateAll } = useSchoolQueryInvalidation()
   const { success, error } = useToast()
 
   return useMutation({
@@ -98,14 +110,9 @@ export const useUpdateSchool = () => {
       const response = await apiClient.put<School>(`/schools/${code}`, data)
       return response.data
     },
-    onSuccess: (updatedSchool) => {
-      invalidateSchool(updatedSchool.code)
-      invalidateAll()
-      
-      // Dupla invalidação para garantir atualização
-      setTimeout(() => {
-        invalidateAll()
-      }, 100)
+    onSuccess: async (updatedSchool) => {
+      // Invalidar e forçar refetch imediatamente
+      await invalidateAll()
       
       success(
         `Escola "${updatedSchool.schoolName}" atualizada com sucesso!`,
@@ -127,21 +134,22 @@ export const useDeleteSchool = () => {
     (code) => `/schools/${code}`,
     {
       successMessage: 'Escola excluída com sucesso!',
-      onSuccess: (_, code) => {
-        // Primeiro remover da cache específica
-        removeSchool(code)
-        // Depois invalidar todas as listas para garantir atualização
-        invalidateAll()
-        
-        // Dupla invalidação para garantir atualização
-        setTimeout(() => {
-          invalidateAll()
-        }, 100)
-        
-        success(
-          `Escola (Código: ${code}) excluída com sucesso!`,
-          { duration: 4000 }
-        )
+      onSuccess: async (_, code) => {
+        try {
+          removeSchool(code)
+          await invalidateAll()
+          
+          success(
+            `Escola (Código: ${code}) excluída com sucesso!`,
+            { duration: 4000 }
+          )
+        } catch (err) {
+          console.error('Erro ao limpar cache após deleção:', err)
+          success(
+            `Escola (Código: ${code}) excluída com sucesso, mas houve um erro ao atualizar a tabela. Por favor, atualize a página.`,
+            { duration: 6000 }
+          )
+        }
       },
       onError: (err: any) => {
         const errorMsg = err.response?.data?.message || 'Erro ao excluir escola'
