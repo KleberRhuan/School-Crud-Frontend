@@ -150,9 +150,9 @@ export const useConnectionFactory = ({
       }
     }
 
+    const forceNative = preferNative && !import.meta.env.PROD
     
-    
-    const promise = preferNative 
+    const promise = forceNative 
       ? createConnection(true).catch((_) => {
           return createConnection(false)
         })

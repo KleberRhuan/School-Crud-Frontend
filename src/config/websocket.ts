@@ -43,6 +43,10 @@ export const defaultWebSocketConfig: WebSocketConfig = {
  * Determina a melhor estratégia de conexão baseado no ambiente
  */
 export const getPreferredConnectionStrategy = (): 'native' | 'sockjs' => {
+  if (import.meta.env.PROD) {
+    return 'sockjs'
+  }
+  
   return 'sockjs'
 }
 
