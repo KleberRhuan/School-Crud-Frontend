@@ -50,8 +50,7 @@ export const useAuthStore = create<AuthState>()(
               try {
                 await authApi.logout()
                 
-              } catch (error) {
-              } finally {
+              } catch (_) {} finally {
                 setAuthToken(null)
                 set((state) => {
                   state.user = null
@@ -156,9 +155,15 @@ export const useAuthStore = create<AuthState>()(
         storage: createJSONStorage(() => localStorage),
         partialize: (state) => ({
           user: state.user,
+          accessToken: state.accessToken,
           isAuthenticated: state.isAuthenticated,
           isInitialized: state.isInitialized,
         }),
+        onRehydrateStorage: () => (state) => {
+          if (state?.accessToken) {
+            setAuthToken(state.accessToken)
+          }
+        },
       }
     ),
     {

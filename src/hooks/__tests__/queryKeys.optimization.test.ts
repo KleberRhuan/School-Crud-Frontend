@@ -216,11 +216,6 @@ describe('ETAPA 5: Otimização de createQueryKeys', () => {
       const endWithCache = performance.now()
       const timeWithCache = endWithCache - startWithCache
       
-      // O cache pode não ser significativamente mais rápido em operações simples
-      // mas deve mostrar pelo menos alguma melhoria
-      console.log(`⏱️  Sem cache: ${timeWithoutCache.toFixed(2)}ms`)
-      console.log(`⚡ Com cache: ${timeWithCache.toFixed(2)}ms`)
-      
       // Teste mais flexível: cache deve ser pelo menos igual ou melhor
       expect(timeWithCache).toBeLessThanOrEqual(timeWithoutCache * 1.1) // 10% de tolerância
     })
@@ -255,13 +250,11 @@ describe('ETAPA 5: Otimização de createQueryKeys', () => {
       // Verificar que muitas são iguais (cachadas)
       const uniqueWithCache = new Set(allocationsWithCache)
       
-      console.log(`🔍 Sem cache: ${uniqueWithoutCache.size} objetos únicos`)
-      console.log(`⚡ Com cache: ${uniqueWithCache.size} objetos únicos`)
+      
+      
       
       // CRITÉRIO DA ETAPA 5: ≥ 20% menos alocações
       const reduction = ((uniqueWithoutCache.size - uniqueWithCache.size) / uniqueWithoutCache.size) * 100
-      console.log(`📉 Redução de alocações: ${reduction.toFixed(1)}%`)
-      
       expect(reduction).toBeGreaterThanOrEqual(20)
     })
   })

@@ -254,8 +254,6 @@ describe('ETAPA 3 - Mutation Factory', () => {
       })
 
       expect(SuccessHandler.createMutationSuccessHandler).toHaveBeenCalledWith(
-        'POST',
-        '/api/test',
         expect.objectContaining({
           queryClient,
           invalidateQueries: [['posts'], ['users']],
@@ -311,8 +309,6 @@ describe('ETAPA 3 - Mutation Factory', () => {
       })
 
       expect(SuccessHandler.createMutationSuccessHandler).toHaveBeenCalledWith(
-        'POST',
-        '/api/test',
         expect.objectContaining({
           showSuccess: false
         })
@@ -330,8 +326,6 @@ describe('ETAPA 3 - Mutation Factory', () => {
       })
 
       expect(SuccessHandler.createMutationSuccessHandler).toHaveBeenCalledWith(
-        'DELETE',
-        '/api/test/1',
         expect.objectContaining({
           successMessage: 'Item removido com sucesso!'
         })

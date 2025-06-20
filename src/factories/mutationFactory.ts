@@ -1,7 +1,6 @@
 import {QueryClient, QueryKey, UseMutationOptions} from '@tanstack/react-query'
 import {apiClient, ApiError} from '@/lib/api-client.ts'
 import {SuccessHandler} from '@/handlers/successHandler.ts'
-import {ErrorHandler} from '@/handlers/errorHandler.ts'
 import {useToast} from '@/hooks/useToast.ts'
 import axios, {AxiosError} from "axios";
 
@@ -86,20 +85,15 @@ export function createApiMutation<TData = any, TVariables = any>(
 
   return {
     mutationFn: createMutationFn<TData, TVariables>(method, url),
-    onSuccess: SuccessHandler.createMutationSuccessHandler<TData, TVariables>(
-      method,
-      typeof url === 'string' ? url : 'dynamic-url',
-      {
-        queryClient,
-        invalidateQueries,
-        showSuccess,
-        successMessage,
-        ...(toastService && { toastService }),
-        onSuccess,
-      }
-    ),
-    onError: createErrorHandler<TVariables>(method, url, showError, toastService, onError),
-    // ✅ Herda configurações globais de retry/retryDelay do QueryClient
+    onSuccess: SuccessHandler.createMutationSuccessHandler<TData, TVariables>({
+      queryClient,
+      invalidateQueries,
+      showSuccess,
+      successMessage,
+      ...(toastService && { toastService }),
+      onSuccess,
+    }),
+    onError: createErrorHandler<TVariables>(showError, toastService, onError),
     ...mutationOptions,
   }
 }
@@ -135,17 +129,18 @@ function createMutationFn<TData, TVariables>(
  * Cria o handler de erro consolidado
  */
 function createErrorHandler<TVariables>(
-  method: HttpMethod,
-  url: string | ((variables: TVariables) => string),
-  _showError: boolean,
-  _toastService?: ReturnType<typeof useToast>,
-  _onError?: (error: ApiError, variables: TVariables, context: unknown) => void
+  showError: boolean,
+  toastService?: ReturnType<typeof useToast>,
+  onError?: (error: ApiError, variables: TVariables, context: unknown) => void
 ) {
-  return (error: ApiError, _variables: TVariables, _context: unknown) => {
-    const urlString = typeof url === 'string' ? url : 'dynamic-url'
-    ErrorHandler.handleError(error, method, urlString)
+  return (error: ApiError, variables: TVariables, context: unknown) => {
+    // Só mostra toast se showError for true
+    if (showError && toastService) {
+      const errorMessage = ((error as any)?.response?.data?.message ?? error?.message) ?? 'Erro interno do servidor'
+      toastService.error(errorMessage)
+    }
     
-    _onError?.(error, _variables, _context)
+    onError?.(error, variables, context)
   }
 }
 
