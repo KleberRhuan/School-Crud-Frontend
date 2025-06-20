@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
 
 // https://vitejs.dev/config/
+// @ts-ignore
 export default defineConfig({
   plugins: [
     react({
@@ -51,6 +52,7 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    strictPort: true,
     hmr: {
       overlay: true
     }

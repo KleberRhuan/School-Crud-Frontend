@@ -120,24 +120,24 @@ jobs:
             const complexity = JSON.parse(fs.readFileSync('complexity-report.json', 'utf8'));
             const sloc = JSON.parse(fs.readFileSync('sloc-report.json', 'utf8'));
             
-            console.log('📊 Métricas de Código:');
-            console.log('- Total de linhas:', sloc.total);
-            console.log('- Linhas de código:', sloc.sloc);
-            console.log('- Complexidade média:', complexity.summary.average.cyclomatic.toFixed(2));
+            
+            
+            
+            );
             
             const highComplexityFunctions = complexity.functions.filter(f => f.cyclomatic > 10);
             if (highComplexityFunctions.length > 0) {
-              console.log('⚠️ Funções com alta complexidade (>10):');
+              :');
               highComplexityFunctions.forEach(f => {
-                console.log(\`  - \${f.name}: \${f.cyclomatic}\`);
+                
               });
               if (highComplexityFunctions.length > 5) {
-                console.log('❌ Muitas funções com alta complexidade');
+                
                 process.exit(1);
               }
             }
             
-            console.log('✅ Análise de complexidade concluída');
+            
           "
 
   build-check:
