@@ -187,6 +187,24 @@ export const useResetPassword = () => {
 }
 
 /**
+ * Hook para verificar email
+ */
+export const useVerifyEmail = (token?: string) => {
+  return useApiQuery(
+    authKeys.detail(`verify-email-${token}`),
+    `/auth/verify?token=${token}`,
+    {},
+    {
+      enabled: !!token && token.length > 0,
+      retry: false,
+      staleTime: 0,
+      refetchOnWindowFocus: false,
+      showErrorToast: false,
+    }
+  )
+}
+
+/**
  * Hook composto para o fluxo de reset de senha
  */
 export const usePasswordResetFlow = () => {

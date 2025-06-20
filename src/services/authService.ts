@@ -83,6 +83,15 @@ export class AuthService {
     const response = await this.api.get<User>('/auth/me')
     return response.data
   }
+
+  /**
+   * Verificar email com token
+   */
+  async verifyEmail(token: string): Promise<void> {
+    await this.api.get('/auth/verify', {
+      params: { token }
+    })
+  }
 }
 
 /**
