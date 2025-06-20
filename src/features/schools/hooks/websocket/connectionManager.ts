@@ -8,9 +8,39 @@ export let globalConnectionType: ConnectionType = null
 export let connectionPromise: Promise<Client> | null = null
 export let isConnecting = false 
 
+let isCleanupListenerAdded = false
+
+const addModernCleanupListeners = () => {
+  if (isCleanupListenerAdded || typeof window === 'undefined') return
+  
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === 'hidden') {
+      cleanupGlobalConnections()
+    }
+  }
+  
+  const handlePageHide = () => {
+    cleanupGlobalConnections()
+  }
+  
+  const handleBeforeUnload = () => {
+    cleanupGlobalConnections()
+  }
+  
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+  window.addEventListener('pagehide', handlePageHide)
+  window.addEventListener('beforeunload', handleBeforeUnload)
+  
+  isCleanupListenerAdded = true
+}
+
 export const setGlobalStompClient = (client: Client | null) => {
   globalStompClient = client
   isConnecting = false 
+  
+  if (client?.connected) {
+    addModernCleanupListeners()
+  }
 }
 
 export const setGlobalConnectionType = (type: ConnectionType) => {
@@ -48,7 +78,7 @@ export const createClientConfig = (
   return isNative 
     ? { 
         ...baseConfig, 
-        brokerURL: endpoint 
+        brokerURL: `${endpoint}?token=${encodeURIComponent(accessToken)}`
       }
     : { 
         ...baseConfig, 
@@ -66,8 +96,8 @@ export const cleanupGlobalConnections = () => {
   if (globalStompClient?.connected) {
     try {
       globalStompClient.deactivate()
-    } catch (error) {
-      
+    } catch {
+      // Silenciar erros de desconexão
     }
   }
   

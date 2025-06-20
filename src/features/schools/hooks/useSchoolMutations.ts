@@ -13,9 +13,24 @@ const useSchoolQueryInvalidation = () => {
         queryKey: ['schools'],
         exact: false 
       })
-      queryClient.invalidateQueries({ queryKey: ['schools-batch'] })
+      queryClient.invalidateQueries({ 
+        queryKey: ['schools-batch'],
+        exact: false 
+      })
       queryClient.invalidateQueries({ queryKey: ['school-metrics-list'] })
       queryClient.invalidateQueries({ queryKey: ['school-columns'] })
+      
+      queryClient.refetchQueries({ 
+        queryKey: ['schools'],
+        exact: false 
+      })
+    },
+    forceRefreshAll: () => {
+      // Função mais agressiva que limpa cache e força reload
+      queryClient.resetQueries({
+        queryKey: ['schools'],
+        exact: false
+      })
     },
     invalidateSchool: (code: number) => {
       queryClient.invalidateQueries({ queryKey: ['school', code] })
@@ -28,8 +43,19 @@ const useSchoolQueryInvalidation = () => {
         queryKey: ['schools'],
         exact: false
       })
+      // Forçar refetch após remoção
+      queryClient.refetchQueries({ 
+        queryKey: ['schools'],
+        exact: false 
+      })
     }
   }
+}
+
+// Hook público para forçar refresh em casos extremos
+export const useForceSchoolsRefresh = () => {
+  const { forceRefreshAll } = useSchoolQueryInvalidation()
+  return forceRefreshAll
 }
 
 export const useCreateSchool = () => {
@@ -40,9 +66,14 @@ export const useCreateSchool = () => {
     '/schools',
     {
       successMessage: 'Escola criada com sucesso!',
-      onSuccess: (newSchool) => {
+      onSuccess: async (newSchool) => {
         // Invalidar queries para atualizar a tabela
         invalidateAll()
+        
+        // Pequeno delay para garantir que o backend processou
+        setTimeout(() => {
+          invalidateAll()
+        }, 100)
         
         // Notificação adicional com detalhes
         success(
@@ -71,6 +102,11 @@ export const useUpdateSchool = () => {
       invalidateSchool(updatedSchool.code)
       invalidateAll()
       
+      // Dupla invalidação para garantir atualização
+      setTimeout(() => {
+        invalidateAll()
+      }, 100)
+      
       success(
         `Escola "${updatedSchool.schoolName}" atualizada com sucesso!`,
         { duration: 4000 }
@@ -96,6 +132,11 @@ export const useDeleteSchool = () => {
         removeSchool(code)
         // Depois invalidar todas as listas para garantir atualização
         invalidateAll()
+        
+        // Dupla invalidação para garantir atualização
+        setTimeout(() => {
+          invalidateAll()
+        }, 100)
         
         success(
           `Escola (Código: ${code}) excluída com sucesso!`,

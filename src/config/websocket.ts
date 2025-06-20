@@ -44,10 +44,10 @@ export const defaultWebSocketConfig: WebSocketConfig = {
  */
 export const getPreferredConnectionStrategy = (): 'native' | 'sockjs' => {
   if (import.meta.env.PROD) {
-    return 'sockjs'
+    return 'native'
   }
   
-  return 'sockjs'
+  return 'native'
 }
 
 /**

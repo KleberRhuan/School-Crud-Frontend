@@ -39,7 +39,7 @@ export const useSchoolsTableController = ({
   
   // Query para buscar dados das escolas
   const { data: schoolsResponse, isLoading, error, refetch } = useApiQuery<PaginatedResponse<School>>(
-    ['schools', filters],
+    ['schools', 'table', filters],
     '/schools',
     {
       params: {
@@ -50,6 +50,11 @@ export const useSchoolsTableController = ({
         direction: 'ASC',
       },
     },
+    {
+      // Reduzir staleTime para forçar atualizações mais frequentes
+      staleTime: 0,
+      gcTime: 5 * 60 * 1000, // 5 minutos
+    }
   )
 
   const schoolsData = schoolsResponse?.content ?? []

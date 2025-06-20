@@ -42,7 +42,7 @@ export const useConnectionFactory = ({
     const endpoint = useNative ? config.nativeEndpoint : config.sockjsEndpoint
     const clientConfig = createClientConfig(endpoint, accessToken, config, useNative)
 
-    
+    console.log(`🔌 Tentando conexão ${useNative ? 'WebSocket Nativo' : 'SockJS'} para: ${endpoint}${useNative ? `?token=${accessToken.substring(0, 10)}...` : ''}`)
 
     try {
       const client = new Client(clientConfig)
@@ -50,11 +50,12 @@ export const useConnectionFactory = ({
       await new Promise<boolean>((resolve, reject) => {
         const timeoutId = setTimeout(() => {
           client.deactivate()
-          reject(new Error('Connection timeout'))
+          reject(new Error(`Connection timeout (${useNative ? 'Native WebSocket' : 'SockJS'})`))
         }, 10000) // 10 segundos
         
         client.onConnect = () => {
           clearTimeout(timeoutId)
+          console.log(`✅ Conectado via ${useNative ? 'WebSocket Nativo' : 'SockJS'}`)
           
           setIsConnected(true)
           setError(null)
@@ -71,7 +72,8 @@ export const useConnectionFactory = ({
         
         client.onStompError = (error) => {
           clearTimeout(timeoutId)
-          const errorMsg = `STOMP Error: ${error.headers?.message || 'Unknown error'}`
+          const errorMsg = `STOMP Error (${useNative ? 'Native' : 'SockJS'}): ${error.headers?.message || 'Unknown error'}`
+          console.error(errorMsg, error)
           setError(errorMsg)
           onError?.(errorMsg)
           reject(new Error(errorMsg))
@@ -79,13 +81,15 @@ export const useConnectionFactory = ({
         
         client.onWebSocketError = (error) => {
           clearTimeout(timeoutId)
-          const errorMsg = `Erro ${useNative ? 'WebSocket Nativo' : 'de conexão SockJS'}`
+          const errorMsg = `WebSocket Error (${useNative ? 'Native' : 'SockJS'}): ${error.message || 'Connection failed'}`
+          console.error(errorMsg, error)
           setError(errorMsg)
           onError?.(errorMsg)
           reject(error)
         }
         
         client.onDisconnect = () => {
+          console.log(`🔌 Desconectado (${useNative ? 'Native' : 'SockJS'})`)
           setIsConnected(false)
           setConnectionType(null)
           setGlobalConnectionType(null)
@@ -94,7 +98,7 @@ export const useConnectionFactory = ({
             const delay = Math.min(config.reconnectDelay * Math.pow(2, 1), 30000)
             setTimeout(() => {
               if (!client.connected) {
-                
+                console.log(`🔄 Tentando reconectar em ${delay}ms...`)
                 client.activate()
               }
             }, delay)
@@ -107,6 +111,7 @@ export const useConnectionFactory = ({
       setGlobalStompClient(client)
       return client
     } catch (error) {
+      console.error(`❌ Falha na conexão ${useNative ? 'Native WebSocket' : 'SockJS'}:`, error)
       setIsConnected(false)
       setConnectionType(null)
       setGlobalConnectionType(null)
@@ -150,10 +155,12 @@ export const useConnectionFactory = ({
       }
     }
 
-    const forceNative = preferNative && !import.meta.env.PROD
+    const shouldTryNative = preferNative || import.meta.env.PROD
     
-    const promise = forceNative 
-      ? createConnection(true).catch((_) => {
+    const promise = shouldTryNative 
+      ? createConnection(true).catch((nativeError) => {
+          console.warn('WebSocket nativo falhou, fazendo fallback para SockJS:', nativeError.message)
+          // Se falhar autenticação ou conexão nativa, tentar SockJS
           return createConnection(false)
         })
       : createConnection(false)
@@ -166,7 +173,7 @@ export const useConnectionFactory = ({
       setConnectionPromise(null)
       return client
     } catch (error) {
-      
+      console.error('Todas as tentativas de conexão falharam:', error)
       setConnectionPromise(null)
       throw error
     }

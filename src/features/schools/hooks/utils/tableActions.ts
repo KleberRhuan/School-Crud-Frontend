@@ -25,16 +25,21 @@ export const useTableActions = ({
     try {
       setIsRefreshing(true)
       
+      // Invalidar todas as queries relacionadas a schools
       await queryClient.invalidateQueries({ 
-        queryKey: ['schools', filters],
-        exact: true
+        queryKey: ['schools'],
+        exact: false
+      })
+      
+      await queryClient.invalidateQueries({ 
+        queryKey: ['schools-batch'],
+        exact: false
       })
       
       await refetch()
       
-      
-    } catch (error) {
-      
+    } catch {
+      // Ignorar erros durante refresh
     } finally {
       setIsRefreshing(false)
     }
