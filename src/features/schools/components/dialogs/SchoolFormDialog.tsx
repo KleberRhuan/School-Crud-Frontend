@@ -21,12 +21,18 @@ interface SchoolFormDialogProps {
   open: boolean
   onClose: () => void
   selectedSchool: School | null
+  onSchoolCreated?: ((school: School) => void) | undefined
+  onSchoolUpdated?: ((school: School) => void) | undefined
+  onSchoolDeleted?: (() => void) | undefined
 }
 
 export const SchoolFormDialog: React.FC<SchoolFormDialogProps> = ({ 
   open, 
   onClose, 
-  selectedSchool 
+  selectedSchool,
+  onSchoolCreated,
+  onSchoolUpdated,
+  onSchoolDeleted
 }) => {
   const {
     formData,
@@ -36,11 +42,15 @@ export const SchoolFormDialog: React.FC<SchoolFormDialogProps> = ({
     isLoading,
     updateField,
     handleSubmit,
+    handleDelete,
     resetForm,
   } = useSchoolFormState({
     school: selectedSchool,
     isOpen: open,
     onClose,
+    onSchoolCreated,
+    onSchoolUpdated,
+    onSchoolDeleted,
   })
 
   const handleClose = () => {
@@ -100,7 +110,9 @@ export const SchoolFormDialog: React.FC<SchoolFormDialogProps> = ({
         <SchoolFormActions
           isSubmitting={isSubmitting}
           isEditing={isEditing}
+          schoolName={selectedSchool?.schoolName || formData.schoolName || ''}
           onSubmit={handleSubmit}
+          onDelete={isEditing ? handleDelete : undefined}
           onClose={handleClose}
         />
       </form>

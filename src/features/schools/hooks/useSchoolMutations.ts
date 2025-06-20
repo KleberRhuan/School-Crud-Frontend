@@ -4,23 +4,63 @@ import { apiClient } from '@/lib/api-client'
 import { useToast } from '@/hooks/useToast'
 import type { School, SchoolCreateRequest, SchoolUpdateRequest } from '@/schemas/schoolSchemas'
 
-export const useCreateSchool = () => {
+const useSchoolQueryInvalidation = () => {
   const queryClient = useQueryClient()
+
+  return {
+    invalidateAll: () => {
+      queryClient.invalidateQueries({ 
+        queryKey: ['schools'],
+        exact: false 
+      })
+      queryClient.invalidateQueries({ queryKey: ['schools-batch'] })
+      queryClient.invalidateQueries({ queryKey: ['school-metrics-list'] })
+      queryClient.invalidateQueries({ queryKey: ['school-columns'] })
+    },
+    invalidateSchool: (code: number) => {
+      queryClient.invalidateQueries({ queryKey: ['school', code] })
+      queryClient.invalidateQueries({ queryKey: ['school-metrics', code] })
+    },
+    removeSchool: (code: number) => {
+      queryClient.removeQueries({ queryKey: ['school', code] })
+      queryClient.removeQueries({ queryKey: ['school-metrics', code] })
+      queryClient.invalidateQueries({ 
+        queryKey: ['schools'],
+        exact: false
+      })
+    }
+  }
+}
+
+export const useCreateSchool = () => {
+  const { invalidateAll } = useSchoolQueryInvalidation()
+  const { success, error } = useToast()
 
   return useApiCreate<School, SchoolCreateRequest>(
     '/schools',
     {
       successMessage: 'Escola criada com sucesso!',
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['schools'] })
+      onSuccess: (newSchool) => {
+        // Invalidar queries para atualizar a tabela
+        invalidateAll()
+        
+        // Notificação adicional com detalhes
+        success(
+          `Escola "${newSchool.schoolName}" (Código: ${newSchool.code}) criada com sucesso!`,
+          { duration: 4000 }
+        )
+      },
+      onError: (err: any) => {
+        const errorMsg = err.response?.data?.message || err.message || 'Erro ao criar escola'
+        error(`Falha ao criar escola: ${errorMsg}`)
       }
     }
   )
 }
 
 export const useUpdateSchool = () => {
-  const queryClient = useQueryClient()
-  const { success } = useToast()
+  const { invalidateAll, invalidateSchool } = useSchoolQueryInvalidation()
+  const { success, error } = useToast()
 
   return useMutation({
     mutationFn: async ({ code, data }: { code: number; data: SchoolUpdateRequest }) => {
@@ -28,24 +68,43 @@ export const useUpdateSchool = () => {
       return response.data
     },
     onSuccess: (updatedSchool) => {
-      success('Escola atualizada com sucesso!')
-      queryClient.invalidateQueries({ queryKey: ['schools'] })
-      queryClient.invalidateQueries({ queryKey: ['school', updatedSchool.code] })
-      queryClient.invalidateQueries({ queryKey: ['school-metrics', updatedSchool.code] })
+      invalidateSchool(updatedSchool.code)
+      invalidateAll()
+      
+      success(
+        `Escola "${updatedSchool.schoolName}" atualizada com sucesso!`,
+        { duration: 4000 }
+      )
+    },
+    onError: (err: any) => {
+      const errorMsg = err.response?.data?.message || 'Erro ao atualizar escola'
+      error(`Falha ao atualizar escola: ${errorMsg}`)
     }
   })
 }
 
 export const useDeleteSchool = () => {
-  const queryClient = useQueryClient()
+  const { invalidateAll, removeSchool } = useSchoolQueryInvalidation()
+  const { success, error } = useToast()
 
   return useApiDelete<number>(
     (code) => `/schools/${code}`,
     {
       successMessage: 'Escola excluída com sucesso!',
-      onSuccess: (_deletedResponse, code) => {
-        queryClient.invalidateQueries({ queryKey: ['schools'] })
-        queryClient.removeQueries({ queryKey: ['school', code] })
+      onSuccess: (_, code) => {
+        // Primeiro remover da cache específica
+        removeSchool(code)
+        // Depois invalidar todas as listas para garantir atualização
+        invalidateAll()
+        
+        success(
+          `Escola (Código: ${code}) excluída com sucesso!`,
+          { duration: 4000 }
+        )
+      },
+      onError: (err: any) => {
+        const errorMsg = err.response?.data?.message || 'Erro ao excluir escola'
+        error(`Falha ao excluir escola: ${errorMsg}`)
       }
     }
   )
