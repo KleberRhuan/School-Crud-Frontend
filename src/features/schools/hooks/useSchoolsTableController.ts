@@ -1,122 +1,43 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import {
-  FilterChangedEvent,
-  GridApi,
-  GridOptions,
-  GridReadyEvent,
-  PaginationChangedEvent,
-  RowDataUpdatedEvent,
-  SortChangedEvent
-} from 'ag-grid-community'
+import { useEffect } from 'react'
 import { useSchoolsGrid } from './useSchoolsGrid'
 import { useSchoolsEvents } from './useSchoolsEvents'
 import { useSchoolFilters } from '../store/schoolFilters'
 import { useApiQuery } from '@/hooks/useApiQuery'
+import { useQueryClient } from '@tanstack/react-query'
+import type { UseSchoolsTableControllerProps } from './types/tableController.types'
 import type { PaginatedResponse, School } from '@/schemas/schoolSchemas'
-
-interface UseSchoolsTableControllerProps {
-  onDataChanged?: (data: any) => void
-  onError?: (error: Error) => void
-  onSchoolSelected?: (school: School | null) => void
-  onSchoolDoubleClicked?: (school: School) => void
-}
-
-// Hook auxiliar para os event handlers do grid
-const useGridEventHandlers = (
-  gridApiRef: React.RefObject<GridApi | null>,
-  _setIsRefreshing: (value: boolean) => void,
-  _onError?: (error: Error) => void
-) => {
-  const handleGridReady = useCallback((event: GridReadyEvent) => {
-    gridApiRef.current = event.api
-  }, [gridApiRef])
-
-  const handlePaginationChanged = useCallback((paginationEvent: PaginationChangedEvent) => {
-    void paginationEvent
-  }, [])
-
-  const handleSortChanged = useCallback((sortEvent: SortChangedEvent) => {
-    void sortEvent 
-  }, [])
-
-  const handleFilterChanged = useCallback((filterEvent: FilterChangedEvent) => {
-    void filterEvent
-  }, [])
-
-  const handleRowDataUpdated = useCallback((dataEvent: RowDataUpdatedEvent) => {
-    if (gridApiRef.current) {
-      gridApiRef.current.hideOverlay()
-    }
-    void dataEvent
-  }, [gridApiRef])
-
-  return {
-    handleGridReady,
-    handlePaginationChanged,
-    handleSortChanged,
-    handleFilterChanged,
-    handleRowDataUpdated
-  }
-}
-
-// Hook auxiliar para funcionalidades de exportação
-const useGridExport = (gridApiRef: React.RefObject<GridApi | null>) => {
-  const createExportParams = useCallback((filename?: string) => ({
-    fileName: filename || `escolas_${new Date().toISOString().split('T')[0]}.csv`,
-    columnSeparator: ',',
-    suppressQuotes: false,
-    skipColumnGroupHeaders: false,
-    skipColumnHeaders: false,
-    allColumns: false,
-    onlySelected: false,
-    processCellCallback: (params: any) => {
-      if (typeof params.value === 'string') {
-        return params.value.replace(/"/g, '""')
-      }
-      return params.value
-    }
-  }), [])
-
-  const exportToCsv = useCallback((filename?: string) => {
-    if (!gridApiRef.current) return
-
-    const params = createExportParams(filename)
-    gridApiRef.current.exportDataAsCsv(params)
-  }, [gridApiRef, createExportParams])
-
-  const autoSizeColumns = useCallback(() => {
-    if (!gridApiRef.current) return
-
-    const allColumnIds: string[] = []
-    gridApiRef.current.getColumns()?.forEach(column => {
-      if (column.getColId()) {
-        allColumnIds.push(column.getColId())
-      }
-    })
-
-    gridApiRef.current.autoSizeColumns(allColumnIds, false)
-  }, [gridApiRef])
-
-  return {
-    exportToCsv,
-    autoSizeColumns
-  }
-}
+import {
+  useTableControllerState,
+  useTableEventHandlers,
+  useExportHandlers,
+  useTableActions,
+  useTableGridOptions,
+  type TableControllerReturn
+} from './utils'
 
 export const useSchoolsTableController = ({
-  onDataChanged: _onDataChanged,
+  onDataChanged,
   onError,
   onSchoolSelected,
-  onSchoolDoubleClicked
-}: UseSchoolsTableControllerProps = {}) => {
-  const gridApiRef = useRef<GridApi | null>(null)
-  const [quickFilterText, setQuickFilterText] = useState<string>('')
-  const [isRefreshing, setIsRefreshing] = useState(false)
-
+  onSchoolDoubleClicked,
+  onSelectionChanged
+}: UseSchoolsTableControllerProps = {}): TableControllerReturn => {
+  const queryClient = useQueryClient()
   const { filters } = useSchoolFilters()
   const { gridOptions: baseGridOptions } = useSchoolsGrid()
   
-  // 2) REMOVER criações server-side e adicionar useApiQuery
+  // Estado centralizado
+  const {
+    gridApiRef,
+    quickFilterText,
+    isRefreshing,
+    isGridReady,
+    setQuickFilterText,
+    setIsRefreshing,
+    setIsGridReady
+  } = useTableControllerState()
+  
+  // Query para buscar dados das escolas
   const { data: schoolsResponse, isLoading, error, refetch } = useApiQuery<PaginatedResponse<School>>(
     ['schools', filters],
     '/schools',
@@ -133,6 +54,7 @@ export const useSchoolsTableController = ({
 
   const schoolsData = schoolsResponse?.content ?? []
 
+  // Event handlers das escolas
   const eventHandlers = useSchoolsEvents({ 
     datasource: null,
     onRowSelected: onSchoolSelected || undefined,
@@ -144,33 +66,47 @@ export const useSchoolsTableController = ({
     handlePaginationChanged,
     handleSortChanged,
     handleFilterChanged,
-    handleRowDataUpdated
-  } = useGridEventHandlers(gridApiRef, setIsRefreshing, onError)
+    handleRowDataUpdated,
+    handleSelectionChanged
+  } = useTableEventHandlers({
+    gridApiRef,
+    setIsRefreshing,
+    setIsGridReady,
+    onError,
+    onSelectionChanged
+  })
 
-  // Export functions usando hook auxiliar
-  const { exportToCsv, autoSizeColumns } = useGridExport(gridApiRef)
+  // Handlers de exportação
+  const exportHandlers = useExportHandlers({
+    gridApiRef,
+    isGridReady
+  })
 
-  // 3) REMOVER referências a server-side no gridOptions
-  const gridOptions = useMemo((): GridOptions => ({
-    ...baseGridOptions,
-    rowModelType: 'clientSide',
-    rowData: schoolsData,
+  // Ações da tabela
+  const actions = useTableActions({
+    queryClient,
+    filters,
+    refetch,
+    setIsRefreshing,
+    setQuickFilterText
+  })
+
+  // Grid options
+  const gridOptions = useTableGridOptions({
+    baseGridOptions,
+    schoolsData,
     quickFilterText,
-    onGridReady: handleGridReady,
-    onRowSelected: eventHandlers.onRowSelected,
-    onRowDoubleClicked: eventHandlers.onRowDoubleClicked,
-    onCellEditingStopped: eventHandlers.onCellEditingStopped,
-  }), [baseGridOptions, schoolsData, quickFilterText, eventHandlers])
+    handleGridReady,
+    eventHandlers,
+    handleSelectionChanged
+  })
 
-  const updateQuickFilter = useCallback((text: string) => {
-    setQuickFilterText(text)
-  }, [])
+  // Effect para notificar mudanças nos dados
+  useEffect(() => {
+    onDataChanged?.(schoolsData)
+  }, [schoolsData, onDataChanged])
 
-  const refresh = useCallback(() => {
-    refetch()
-  }, [refetch])
-
-  // 5) Ajustar overlay effect para isLoading e error
+  // Effect para gerenciar overlay do grid
   useEffect(() => {
     if (!gridApiRef.current) return
 
@@ -181,7 +117,7 @@ export const useSchoolsTableController = ({
     } else {
       gridApiRef.current.hideOverlay()
     }
-  }, [isLoading, isRefreshing, error])
+  }, [isLoading, isRefreshing, error, gridApiRef])
 
   return {
     // Grid
@@ -191,12 +127,11 @@ export const useSchoolsTableController = ({
     isLoading,
     error: error?.message ?? null,
     isRefreshing,
+    isGridReady,
     
     // Actions
-    updateQuickFilter,
-    refresh,
-    exportToCsv,
-    autoSizeColumns,
+    ...actions,
+    ...exportHandlers,
     
     // Events
     onGridReady: handleGridReady,

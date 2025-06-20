@@ -9,6 +9,10 @@ export interface UseSchoolsGridReturn {
   defaultColDef: any
 }
 
+// Constantes para configuração da grid
+const DEFAULT_PAGE_SIZE = 50
+const PAGE_SIZE_OPTIONS = [25, 50, 100, 200]
+
 export const useSchoolsGrid = (): UseSchoolsGridReturn => {
   const { columns, defaultColDef } = useSchoolColumns()
 
@@ -18,8 +22,8 @@ export const useSchoolsGrid = (): UseSchoolsGridReturn => {
     
     // Paginação client-side
     pagination: true,
-    paginationPageSize: 50,
-    paginationPageSizeSelector: [25, 50, 100, 200],
+    paginationPageSize: DEFAULT_PAGE_SIZE,
+    paginationPageSizeSelector: PAGE_SIZE_OPTIONS,
     
     // Performance
     suppressColumnVirtualisation: false,
@@ -27,10 +31,12 @@ export const useSchoolsGrid = (): UseSchoolsGridReturn => {
     rowBuffer: 0,
     animateRows: true,
 
-    // Selection - Novo formato do AG Grid 32.2.1+
+    // Selection - Habilitado seleção múltipla com checkboxes
     rowSelection: {
-      mode: 'singleRow',
-      checkboxes: false,
+      mode: 'multiRow',
+      checkboxes: true,
+      headerCheckbox: true,
+      enableClickSelection: true,
     },
     suppressCellFocus: false,
 
@@ -41,10 +47,6 @@ export const useSchoolsGrid = (): UseSchoolsGridReturn => {
     // Styling
     suppressContextMenu: false,
     theme: 'legacy',
-
-    // Loading states
-    loadingOverlayComponent: 'customLoadingOverlay',
-    noRowsOverlayComponent: 'customNoRowsOverlay',
 
     // Accessibility
     suppressMenuHide: false,

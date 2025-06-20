@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import { forwardRef, useImperativeHandle, useMemo } from 'react'
 import { SchoolsTableView } from './SchoolsTableView'
 import { useSchoolsTableController } from '../hooks/useSchoolsTableController'
 
@@ -7,27 +7,51 @@ interface SchoolsTableContainerProps {
   onError?: (error: Error) => void
   onSchoolSelected?: (school: any) => void
   onSchoolDoubleClicked?: (school: any) => void
+  onSelectionChanged?: (selectedCount: number) => void
   className?: string
 }
 
-export const SchoolsTableContainer: React.FC<SchoolsTableContainerProps> = ({
+export interface SchoolsTableHandle {
+  exportToCsv: (filename?: string) => boolean
+  exportVisiblePageToCsv: (filename?: string) => boolean
+  exportSelectedToCsv: (filename?: string) => boolean
+  exportAllColumnsToCsv: (filename?: string) => boolean
+  autoSizeColumns: () => void
+  refresh: () => void
+  isLoading: boolean
+  isGridReady: boolean
+}
+
+export const SchoolsTableContainer = forwardRef<SchoolsTableHandle, SchoolsTableContainerProps>(({
   onDataChanged,
   onError,
   onSchoolSelected,
   onSchoolDoubleClicked,
+  onSelectionChanged,
   className = 'ag-theme-quartz-dark'
-}) => {
-  // Memoizar as props do controller para evitar problemas de Fast refresh
+}, ref) => {
   const controllerProps = useMemo(() => {
     const props: Parameters<typeof useSchoolsTableController>[0] = {}
     if (onDataChanged) props.onDataChanged = onDataChanged
     if (onError) props.onError = onError
     if (onSchoolSelected) props.onSchoolSelected = onSchoolSelected
     if (onSchoolDoubleClicked) props.onSchoolDoubleClicked = onSchoolDoubleClicked
+    if (onSelectionChanged) props.onSelectionChanged = onSelectionChanged
     return props
-  }, [onDataChanged, onError, onSchoolSelected, onSchoolDoubleClicked])
+  }, [onDataChanged, onError, onSchoolSelected, onSchoolDoubleClicked, onSelectionChanged])
 
   const controller = useSchoolsTableController(controllerProps)
+
+  useImperativeHandle(ref, () => ({
+    exportToCsv: controller.exportToCsv,
+    exportVisiblePageToCsv: controller.exportVisiblePageToCsv,
+    exportSelectedToCsv: controller.exportSelectedToCsv,
+    exportAllColumnsToCsv: controller.exportAllColumnsToCsv,
+    autoSizeColumns: controller.autoSizeColumns,
+    refresh: controller.refresh,
+    isLoading: controller.isLoading,
+    isGridReady: controller.isGridReady,
+  }), [controller])
 
   return (
     <SchoolsTableView
@@ -42,7 +66,7 @@ export const SchoolsTableContainer: React.FC<SchoolsTableContainerProps> = ({
       className={className}
     />
   )
-}
+})
 
-// Export do controller para casos de uso avançado
-export { useSchoolsTableController } from '../hooks/useSchoolsTableController' 
+SchoolsTableContainer.displayName = 'SchoolsTableContainer'
+export { useSchoolsTableController } from '../hooks/useSchoolsTableController'

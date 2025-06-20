@@ -91,12 +91,23 @@ export const SchoolsTableView: React.FC<SchoolsTableViewProps> = ({
             justifyContent: 'center'
           },
           '& .ag-row': {
-            borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
+            borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              backgroundColor: 'rgba(14, 165, 233, 0.08)',
+              transform: 'translateX(2px)',
+              boxShadow: '2px 0 8px rgba(14, 165, 233, 0.1)',
+              '& .ag-cell': {
+                borderRightColor: 'rgba(14, 165, 233, 0.2)'
+              }
+            }
           },
           '& .ag-cell': {
             display: 'flex',
             alignItems: 'center',
-            borderRight: '1px solid rgba(255, 255, 255, 0.05)'
+            borderRight: '1px solid rgba(255, 255, 255, 0.05)',
+            transition: 'border-color 0.2s ease'
           },
           '& .ag-paging-panel': {
             backgroundColor: 'rgba(30, 41, 59, 0.9)',
