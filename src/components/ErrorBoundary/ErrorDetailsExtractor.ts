@@ -1,4 +1,4 @@
-// === CLASSE PARA EXTRAÇÃO DE DETALHES DO ERRO ===
+
 export interface ErrorDetails {
   message: string
   stack?: string | undefined

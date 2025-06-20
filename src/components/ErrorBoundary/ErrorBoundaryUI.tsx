@@ -14,7 +14,6 @@ import {
 } from '@mui/icons-material'
 import { motion } from 'framer-motion'
 
-// === PROPS DO COMPONENTE UI ===
 interface ErrorBoundaryUIProps {
   error: Error | null
   eventId: string | null
@@ -23,7 +22,6 @@ interface ErrorBoundaryUIProps {
   onReportBug: () => void
 }
 
-// === COMPONENTE DE UI DO ERROR BOUNDARY ===
 export const ErrorBoundaryUI: React.FC<ErrorBoundaryUIProps> = ({
   error,
   eventId,

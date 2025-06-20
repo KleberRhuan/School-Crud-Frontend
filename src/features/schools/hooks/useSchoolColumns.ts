@@ -147,7 +147,7 @@ const generateColumnsFromDefinitions = (definitions: ColumnDefinition[]): ColDef
 
     if (columnDef.category === 'metrics') {
       baseColDef.valueGetter = (params: any) => {
-        // Estrutura real dos dados: data.metrics.metrics.CAMPO
+
         const metricsData = params.data?.metrics?.metrics
         const metricsValue = metricsData?.[columnDef.field]
         
