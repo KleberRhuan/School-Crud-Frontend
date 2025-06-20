@@ -7,12 +7,12 @@ import { useQueryClient } from '@tanstack/react-query'
 import type { UseSchoolsTableControllerProps } from './types/tableController.types'
 import type { PaginatedResponse, School } from '@/schemas/schoolSchemas'
 import {
-  useTableControllerState,
-  useTableEventHandlers,
+  type TableControllerReturn,
   useExportHandlers,
   useTableActions,
-  useTableGridOptions,
-  type TableControllerReturn
+  useTableControllerState,
+  useTableEventHandlers,
+  useTableGridOptions
 } from './utils'
 
 export const useSchoolsTableController = ({

@@ -37,14 +37,17 @@ const QueryStatsProvider: React.FC<{
         cacheSize: `${JSON.stringify(cache.getAll()).length} bytes`,
       }
     },
-    
+
     logStats: () => {
       const cache = queryClient.getQueryCache()
       const mutations = queryClient.getMutationCache()
-      cache.getAll().length;
-      mutations.getAll().length;
-      cache.getAll().filter(query => query.state.fetchStatus === 'fetching').length;
-      `${JSON.stringify(cache.getAll()).length} bytes`;
+      const stats = {
+        queries: cache.getAll().length,
+        mutations: mutations.getAll().length,
+        isFetching: cache.getAll().filter(query => query.state.fetchStatus === 'fetching').length,
+        cacheSize: `${JSON.stringify(cache.getAll()).length} bytes`,
+      }
+      console.log('📊 [QueryStats] Estatísticas do cache:', stats)
     },
 
     clearAllCache: () => {

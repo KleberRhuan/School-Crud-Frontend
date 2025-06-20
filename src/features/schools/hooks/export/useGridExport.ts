@@ -40,7 +40,7 @@ export const useGridExport = (gridApiRef: React.RefObject<GridApi | null>) => {
         
         if (rowNode) {
           visibleRowPositions.push({
-            rowIndex: rowIndex,
+            rowIndex,
             rowPinned: rowNode.rowPinned ?? null
           })
         }

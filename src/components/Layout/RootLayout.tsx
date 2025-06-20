@@ -1,7 +1,7 @@
 import { Box } from '@mui/material'
 import { AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/hooks/useAuth'
-import { AppHeader, UserMenu, MainContent } from './components'
+import { AppHeader, MainContent, UserMenu } from './components'
 import { useUserMenu } from './hooks/useUserMenu'
 
 /**

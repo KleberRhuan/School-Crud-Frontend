@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useSearch, useNavigate } from '@tanstack/react-router'
+import { useNavigate, useSearch } from '@tanstack/react-router'
 import { Box } from '@mui/material'
 import { CheckCircle, Email, Error as ErrorIcon } from '@mui/icons-material'
 

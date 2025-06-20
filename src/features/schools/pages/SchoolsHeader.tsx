@@ -5,10 +5,10 @@ import {
   Typography,
 } from '@mui/material'
 import { 
+  ActiveFilters, 
   DesktopActions, 
-  MobileActions, 
   HeaderMetrics, 
-  ActiveFilters 
+  MobileActions 
 } from '../components/header'
 import { useSchoolsHeader } from '../hooks/useSchoolsHeader'
 

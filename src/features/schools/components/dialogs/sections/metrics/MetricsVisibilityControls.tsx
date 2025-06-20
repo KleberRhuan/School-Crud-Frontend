@@ -1,6 +1,6 @@
 import React from 'react'
 import { Box, Button, Typography } from '@mui/material'
-import { ExpandMore, ExpandLess } from '@mui/icons-material'
+import { ExpandLess, ExpandMore } from '@mui/icons-material'
 
 interface MetricsVisibilityControlsProps {
   canShowMore: boolean

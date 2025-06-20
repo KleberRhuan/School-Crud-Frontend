@@ -1,4 +1,4 @@
-import React, { Component, ReactNode, ErrorInfo } from 'react'
+import React, { Component, ErrorInfo, ReactNode } from 'react'
 import { ErrorBoundaryUI } from './ErrorBoundaryUI'
 import { ErrorReportHandler } from './ErrorReportHandler'
 import { ErrorDetailsExtractor } from './ErrorDetailsExtractor'
