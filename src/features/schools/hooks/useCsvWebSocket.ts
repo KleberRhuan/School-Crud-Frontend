@@ -1,182 +1,169 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Client } from '@stomp/stompjs'
-import SockJS from 'sockjs-client'
+import { getPreferredConnectionStrategy } from '@/config/websocket'
+import { useConnectionQuality } from './websocket/connectionQuality'
+import { useCleanupResources, useJobSubscription } from './websocket/subscription'
+import { useConnectionFactory } from './websocket/connectionFactory'
+import { calculateReconnectDelay, cleanupGlobalConnections, globalConnectionType, globalStompClient } from './websocket/connectionManager'
+import type { 
+  ConnectionType,
+  CsvImportProgressData,
+  UseCsvWebSocketProps, 
+  UseCsvWebSocketReturn
+} from './websocket/types'
 
-interface CsvImportProgressData {
-  id: string
-  fileName?: string
-  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELLED'
-  totalRecords?: number
-  processedRecords?: number
-  successfulRecords?: number
-  failedRecords?: number
-  progress?: number
-  error?: string
-  createdAt?: string
-  finishedAt?: string
+export type { 
+  ConnectionType,
+  CsvImportProgressData,
+  UseCsvWebSocketProps, 
+  UseCsvWebSocketReturn
 }
 
-interface UseCsvWebSocketProps {
-  accessToken: string
-  onProgressUpdate?: (data: CsvImportProgressData) => void
-  _onError?: (error: string) => void
-}
-
-interface UseCsvWebSocketReturn {
-  isConnected: boolean
-  error: string | null
-  subscribe: (jobId: string) => void
-  unsubscribe: (jobId: string) => void
-  disconnect: () => void
-}
+const BASE_RECONNECT_DELAY = 1000
+const CONNECTION_DEBOUNCE_MS = 500
 
 export const useCsvWebSocket = ({
   accessToken,
   onProgressUpdate,
-  _onError
+  onError,
+  preferNativeWebSocket
 }: UseCsvWebSocketProps): UseCsvWebSocketReturn => {
   const [isConnected, setIsConnected] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const stompClientRef = useRef<Client | null>(null)
+  const [connectionType, setConnectionType] = useState<ConnectionType>(null)
+  const [lastMessageTime, setLastMessageTime] = useState<Date | null>(null)
+  
   const subscribedJobsRef = useRef<Set<string>>(new Set())
-  const subscriptionsRef = useRef<Map<string, any>>(new Map())
+  const connectionAttemptsRef = useRef(0)
+  const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const lastConnectionAttemptRef = useRef<string | null>(null)
+  
+  const preferredStrategy = preferNativeWebSocket ?? (getPreferredConnectionStrategy() === 'native')
+  const { connectionQuality, updateHeartbeat } = useConnectionQuality(isConnected)
+  const { subscriptionsRef, cleanup } = useCleanupResources()
 
-  const cleanup = useCallback(() => {
-    subscriptionsRef.current.forEach(subscription => {
-      try {
-        subscription.unsubscribe()
-      } catch {
-        // Silent error handling
-      }
-    })
-    subscriptionsRef.current.clear()
-    
-    if (stompClientRef.current?.connected) {
-      try {
-        stompClientRef.current.deactivate()
-      } catch {
-        // Silent error handling
-      }
-    }
-    
-    setIsConnected(false)
-    setError(null)
+  const getReconnectDelay = useCallback(() => {
+    return calculateReconnectDelay(BASE_RECONNECT_DELAY, connectionAttemptsRef.current)
   }, [])
 
-  const connect = useCallback(() => {
-    if (stompClientRef.current?.connected) {
+  const { subscribeToJob } = useJobSubscription(
+    subscriptionsRef,
+    onProgressUpdate,
+    setLastMessageTime,
+    updateHeartbeat
+  )
+
+  const { connect } = useConnectionFactory({
+    accessToken,
+    onError,
+    updateHeartbeat,
+    subscribeToJob,
+    subscribedJobsRef,
+    connectionAttemptsRef,
+    getReconnectDelay,
+    setIsConnected,
+    setError,
+    setConnectionType
+  })
+
+  const handleConnect = useCallback(async () => {
+    // Evitar múltiplas tentativas com o mesmo token
+    if (lastConnectionAttemptRef.current === accessToken) {
+      
       return
     }
 
-    cleanup()
-
-    const client = new Client({
-      webSocketFactory: () => new SockJS(`${process.env.VITE_API_URL || 'http://localhost:8080'}/ws`),
-      connectHeaders: {
-        'Authorization': `Bearer ${accessToken}`
-      },
-      debug: () => {
-        // Debug callback - desenvolvimento apenas
-      },
-      reconnectDelay: 5000,
-      heartbeatIncoming: 4000,
-      heartbeatOutgoing: 4000,
-      onConnect: () => {
-        setIsConnected(true)
-        setError(null)
-        
-        // Re-inscrever em jobs ativos
-        subscribedJobsRef.current.forEach(jobId => {
-          subscribeToJob(jobId)
-        })
-      },
-      onStompError: () => {
-        // Erro STOMP
-        setError('Erro STOMP')
-        _onError?.('Erro STOMP')
-      },
-      onWebSocketError: () => {
-        // Erro WebSocket
-        setError('Erro de conexão WebSocket')
-        _onError?.('Erro de conexão WebSocket')
-      },
-      onDisconnect: () => {
-        // STOMP desconectado
-        setIsConnected(false)
-      }
-    })
-
-    stompClientRef.current = client
-    client.activate()
-  }, [accessToken, _onError, cleanup, onProgressUpdate])
-
-  const subscribeToJob = useCallback((jobId: string) => {
-    if (!stompClientRef.current?.connected) {
+    // Se já está conectado, não tentar novamente
+    if (globalStompClient?.connected) {
+      setIsConnected(true)
+      setConnectionType(globalConnectionType)
       return
     }
 
-    const subscription = stompClientRef.current.subscribe(
-      `/topic/csv-import/${jobId}`,
-      (message) => {
-        try {
-          const data = JSON.parse(message.body)
-          if (data && data.progress === undefined && data.totalRecords && data.processedRecords) {
-            data.progress = Math.floor((data.processedRecords / data.totalRecords) * 100)
-          }
-          onProgressUpdate?.(data)
-        } catch {
-          // Erro ao parsear mensagem - ignorado
-        }
-      }
-    )
+    lastConnectionAttemptRef.current = accessToken
 
-    subscriptionsRef.current.set(jobId, subscription)
-  }, [onProgressUpdate])
+    try {
+      await connect(preferredStrategy)
+    } catch (error) {
+      
+      // Reset do controle de tentativas após falha
+      lastConnectionAttemptRef.current = null
+    }
+  }, [connect, preferredStrategy, accessToken])
+
+  const debouncedConnect = useCallback(() => {
+    // Limpar timeout anterior
+    if (connectionTimeoutRef.current) {
+      clearTimeout(connectionTimeoutRef.current)
+    }
+
+    // Agendar nova conexão com debounce
+    connectionTimeoutRef.current = setTimeout(() => {
+      handleConnect()
+    }, CONNECTION_DEBOUNCE_MS)
+  }, [handleConnect])
 
   const subscribe = useCallback((jobId: string) => {
     subscribedJobsRef.current.add(jobId)
     
-    if (stompClientRef.current?.connected) {
+    if (globalStompClient?.connected) {
       subscribeToJob(jobId)
     } else {
-      connect()
+      debouncedConnect()
     }
-  }, [subscribeToJob, connect])
+  }, [subscribeToJob, debouncedConnect])
+
+  const { unsubscribeFromJob } = useJobSubscription(
+    subscriptionsRef,
+    onProgressUpdate,
+    setLastMessageTime,
+    updateHeartbeat
+  )
 
   const unsubscribe = useCallback((jobId: string) => {
     subscribedJobsRef.current.delete(jobId)
-    
-    const subscription = subscriptionsRef.current.get(jobId)
-    if (subscription) {
-      try {
-        subscription.unsubscribe()
-        subscriptionsRef.current.delete(jobId)
-      } catch {
-        // Silent error handling
-      }
-    }
-  }, [])
+    unsubscribeFromJob(jobId)
+  }, [unsubscribeFromJob])
 
   const disconnect = useCallback(() => {
+    if (connectionTimeoutRef.current) {
+      clearTimeout(connectionTimeoutRef.current)
+      connectionTimeoutRef.current = null
+    }
+    
     subscribedJobsRef.current.clear()
+    connectionAttemptsRef.current = 0
+    lastConnectionAttemptRef.current = null
+    
+    cleanupGlobalConnections()
+    setIsConnected(false)
+    setError(null)
+    setConnectionType(null)
     cleanup()
   }, [cleanup])
 
   useEffect(() => {
-    if (accessToken && accessToken !== 'temp-token') {
-      connect()
+    if (accessToken && accessToken !== 'temp-token' && accessToken.length > 20) {
+      debouncedConnect()
     } else {
       disconnect()
     }
 
-    return cleanup
-  }, [accessToken, connect, disconnect, cleanup])
+    return () => {
+      if (connectionTimeoutRef.current) {
+        clearTimeout(connectionTimeoutRef.current)
+      }
+      cleanup()
+    }
+  }, [accessToken, debouncedConnect, disconnect, cleanup])
 
   return {
     isConnected,
     error,
     subscribe,
     unsubscribe,
-    disconnect
+    disconnect,
+    connectionType,
+    connectionQuality,
+    lastMessageTime
   }
 } 

@@ -133,7 +133,7 @@ export const useCancelCsvJob = () => {
     '/csv/jobs/cancel',
     {
       successMessage: 'Job cancelado com sucesso!',
-      onSuccess: (_ignored, variables) => {
+      onSuccess: (_, variables) => {
         void queryClient.invalidateQueries({ queryKey: ['csv-jobs'] })
           void queryClient.invalidateQueries({ queryKey: ['csv-job', variables.jobId] })
       }
