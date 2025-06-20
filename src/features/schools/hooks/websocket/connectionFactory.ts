@@ -160,7 +160,6 @@ export const useConnectionFactory = ({
     const promise = shouldTryNative 
       ? createConnection(true).catch((nativeError) => {
           console.warn('WebSocket nativo falhou, fazendo fallback para SockJS:', nativeError.message)
-          // Se falhar autenticação ou conexão nativa, tentar SockJS
           return createConnection(false)
         })
       : createConnection(false)

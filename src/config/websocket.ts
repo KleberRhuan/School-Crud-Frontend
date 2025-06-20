@@ -17,7 +17,7 @@ export interface WebSocketConfig {
  * Determina as URLs WebSocket baseado no protocolo atual
  */
 export const getWebSocketUrls = () => {
-  const isHttps = window.location.protocol === 'https:'
+  const isHttps = window.location.protocol === 'https:' || import.meta.env.VITE_APP_URL.includes('https')
   const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080'
   const host = baseUrl.replace(/^https?:\/\//, '')
   

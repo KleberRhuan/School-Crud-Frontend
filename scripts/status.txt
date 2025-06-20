@@ -1,0 +1,69 @@
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   ../.github/workflows/code-quality.yml
+	modified:   ../index.html
+	modified:   ../src/components/ErrorBoundary/ErrorBoundaryUI.tsx
+	modified:   ../src/components/ErrorBoundary/ErrorDetailsExtractor.ts
+	modified:   ../src/components/ErrorBoundary/index.ts
+	modified:   ../src/components/Layout/RootLayout.tsx
+	modified:   ../src/factories/mutationFactory.ts
+	modified:   ../src/features/schools/components/SchoolsTableContainer.tsx
+	modified:   ../src/features/schools/components/SchoolsTableView.tsx
+	modified:   ../src/features/schools/components/dialogs/ImportDialog.tsx
+	modified:   ../src/features/schools/components/dialogs/SchoolFormActions.tsx
+	modified:   ../src/features/schools/components/dialogs/SchoolFormDialog.tsx
+	modified:   ../src/features/schools/components/dialogs/SchoolFormSections.tsx
+	modified:   ../src/features/schools/components/dialogs/useSchoolFormState.ts
+	modified:   ../src/features/schools/hooks/index.ts
+	modified:   ../src/features/schools/hooks/useCsvJobs.ts
+	modified:   ../src/features/schools/hooks/useCsvWebSocket.ts
+	modified:   ../src/features/schools/hooks/useSchoolColumns.ts
+	modified:   ../src/features/schools/hooks/useSchoolMutations.ts
+	modified:   ../src/features/schools/hooks/useSchoolsGrid.ts
+	modified:   ../src/features/schools/hooks/useSchoolsTableController.ts
+	modified:   ../src/features/schools/pages/SchoolsDialogs.tsx
+	modified:   ../src/features/schools/pages/SchoolsHeader.tsx
+	modified:   ../src/features/schools/pages/SchoolsPage.tsx
+	modified:   ../src/handlers/successHandler.ts
+	modified:   ../src/hooks/__tests__/etapa3-mutation-factory.test.tsx
+	modified:   ../src/hooks/__tests__/queryKeys.optimization.test.ts
+	modified:   ../src/hooks/useAuth.ts
+	modified:   ../src/pages/Dashboard.tsx
+	modified:   ../src/providers/QueryProvider.tsx
+	modified:   ../src/router.tsx
+	modified:   ../src/services/authService.ts
+	modified:   ../src/stores/authStore.ts
+	modified:   ../src/stores/utils.ts
+	modified:   ../vite.config.ts
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	../public/
+	./
+	../src/components/Layout/components/
+	../src/components/Layout/constants/
+	../src/components/Layout/hooks/
+	../src/components/Layout/index.ts
+	../src/config/websocket.ts
+	../src/features/schools/components/ExportMenu.tsx
+	../src/features/schools/components/dialogs/import/
+	../src/features/schools/components/dialogs/sections/
+	../src/features/schools/components/dialogs/utils/
+	../src/features/schools/components/header/
+	../src/features/schools/hooks/export/
+	../src/features/schools/hooks/grid/
+	../src/features/schools/hooks/types/
+	../src/features/schools/hooks/useSchoolsHeader.ts
+	../src/features/schools/hooks/utils/
+	../src/features/schools/hooks/websocket/
+	../src/features/schools/pages/utils/
+	../src/pages/Dashboard/
+	../src/pages/NotFound/
+	../src/pages/VerifyEmail.tsx
+	../src/pages/VerifyEmail/
+
+no changes added to commit (use "git add" and/or "git commit -a")
