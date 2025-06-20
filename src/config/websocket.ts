@@ -58,14 +58,6 @@ export const isSecureContext = (): boolean => {
  * Determina a melhor estratégia de conexão baseado no ambiente
  */
 export const getPreferredConnectionStrategy = (): 'native' | 'sockjs' => {
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return 'sockjs'
-  }
-  
-  if (isNativeWebSocketSupported()) {
-    return 'native'
-  }
-  
   return 'sockjs'
 }
 
