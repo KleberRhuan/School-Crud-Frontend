@@ -39,21 +39,6 @@ export const defaultWebSocketConfig: WebSocketConfig = {
   maxReconnectAttempts: 5,
   enableDebug: import.meta.env.DEV || false
 }
-
-/**
- * Verifica se WebSocket nativo está disponível
- */
-export const isNativeWebSocketSupported = (): boolean => {
-  return typeof WebSocket !== 'undefined'
-}
-
-/**
- * Verifica se está em ambiente HTTPS
- */
-export const isSecureContext = (): boolean => {
-  return window.location.protocol === 'https:' || window.location.hostname === 'localhost'
-}
-
 /**
  * Determina a melhor estratégia de conexão baseado no ambiente
  */

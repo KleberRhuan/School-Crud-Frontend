@@ -1,0 +1,13 @@
+# netlify.toml
+
+[build]
+  command   = "npm run build"
+  publish   = "dist"
+
+[[redirects]]
+  from     = "/*"
+  to       = "/index.html"
+  status   = 200
+
+[context.production.environment]
+  VITE_API_URL = "https://houer-backend-1093054213468.southamerica-east1.run.app/api/v1"
